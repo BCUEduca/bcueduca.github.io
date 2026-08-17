@@ -195,6 +195,23 @@
   .pod .nm{font-weight:800;font-size:15px;margin:4px 0}
   .pod .vl{font-family:var(--mono);color:var(--dim);font-size:13px}
   .pod.p1{height:190px;border-color:var(--gold)} .pod.p2{height:150px} .pod.p3{height:120px}
+  /* --- noticias --- */
+  .news{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--gold);
+        border-radius:10px;padding:12px 14px;margin-bottom:10px}
+  .news .src{display:flex;align-items:center;gap:7px;color:var(--faint);font-size:11.5px;
+             letter-spacing:.7px;text-transform:uppercase;margin-bottom:5px}
+  .news h4{font-size:15.5px;line-height:1.35;margin-bottom:5px}
+  .news p{color:var(--dim);font-size:13.5px;line-height:1.55;margin:0}
+  .news .clave{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);
+               color:var(--gold);font-size:13px;line-height:1.5}
+  .news-title{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;
+              letter-spacing:.5px;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+  .mon-news{background:#05070d;border-top:1px solid var(--line);padding:12px 18px;display:flex;gap:16px;
+            align-items:center;min-height:64px}
+  .mon-news .lbl{background:var(--down);color:#fff;font-weight:800;font-size:13px;letter-spacing:1px;
+                 padding:5px 11px;border-radius:5px;white-space:nowrap}
+  .mon-news .txt{font-size:clamp(15px,1.6vw,21px);font-weight:700;line-height:1.35}
+  .mon-news .sub{color:var(--faint);font-size:clamp(11px,1.1vw,14px);font-weight:400;margin-top:3px}
   /* --- panel de puntaje --- */
   .score-hero{text-align:center;padding:16px 10px 20px}
   .score-hero .num{font-family:var(--mono);font-size:66px;font-weight:800;line-height:1}
@@ -225,7 +242,7 @@
   <div class="role-grid">
     <button class="role-card" onclick="location.hash='#coordinador'">
       <div class="ico">🎛️</div><b>Coordinador</b>
-      <span>Creá la sesión, controlá las ruedas y mirá los portafolios de todos los grupos.</span>
+      <span>Creá la sesión, controlá las rondas y mirá los portafolios de todos los grupos.</span>
     </button>
     <button class="role-card" onclick="location.hash='#grupo'">
       <div class="ico">👨‍👩‍👧‍👦</div><b>Grupo / Familia</b>
@@ -243,10 +260,11 @@
 <div id="view-monitor" class="hidden">
   <div class="mon-head">
     <h1>BOLSA DE VALORES <span class="tick">— MONTEVIDEO</span></h1>
-    <div class="mon-round" id="mon-round">RUEDA 1</div>
+    <div class="mon-round" id="mon-round">RONDA 1</div>
     <div class="mon-clock mono" id="mon-clock">--:--:--</div>
   </div>
   <div class="mon-grid" id="mon-grid"></div>
+  <div class="mon-news" id="mon-news"></div>
   <div class="mon-tape"><div class="tape-inner" id="mon-tape"></div></div>
   <div class="mon-controls">
     <button class="btn" onclick="Monitor.setRound(1)">R1</button>
@@ -260,7 +278,7 @@
 <div id="bell-overlay" class="hidden">
   <div class="bell">🔔</div>
   <h2 id="bell-title">¡SUENA LA CAMPANA!</h2>
-  <p id="bell-sub">Comienza la Rueda 2 — los precios cambiaron</p>
+  <p id="bell-sub">Comienza la Ronda 2 — los precios cambiaron</p>
 </div>
 
 <!-- ============ GRUPO ============ -->
@@ -275,7 +293,7 @@
    ================================================================ */
 const GAME_DATA = {
   budget: 20000,               // USD por familia
-  yearsPerRound: 1,            // cada rueda ≈ 1 año
+  yearsPerRound: 1,            // cada ronda ≈ 1 año
   lrmRate: 0.09,               // tasa anual LRM (en $, se asume TC estable en el juego)
   rounds: 3,
   assets: [
@@ -316,6 +334,44 @@ const GAME_DATA = {
       desc:'La plataforma de series y películas por streaming más grande del mundo.'
     }
   ],
+  /* Noticias que se difunden al abrir cada ronda. 'clave' la ve sólo el coordinador. */
+  news: {
+    1: [
+      { tag:'ℹ️', src:'Mercados', h:'Se abre la ronda con calma en plazas internacionales',
+        d:'Las bolsas arrancan el año sin sobresaltos. Los analistas advierten que los precios de las empresas tecnológicas ya vienen de varios años de subas fuertes.',
+        clave:'Sembrá la duda desde el arranque: que algo venga subiendo hace años no garantiza que siga subiendo.' },
+      { tag:'💵', src:'Banco Central del Uruguay',
+        h:'El BCU coloca Letras de Regulación Monetaria a un año con 9% de interés',
+        d:'El instrumento es en pesos uruguayos. Quien le presta dinero al Banco Central sabe desde el primer día exactamente cuánto va a cobrar al vencimiento.',
+        clave:'Acá aparece la idea de retorno conocido de antemano, en contraste con la acción, cuyo precio nadie puede prometer.' },
+      { tag:'🇺🇾', src:'Deuda soberana',
+        h:'El bono uruguayo 2033 cotiza levemente por debajo de su valor nominal',
+        d:'Paga 5,1% de interés anual sobre 100 y hoy se consigue a 98,5. Quien lo compre cobra el cupón todos los años, suba o baje su precio.',
+        clave:'Buen momento para explicar el cupón: es dinero que entra aunque el precio no se mueva.' }
+    ],
+    2: [
+      { tag:'📉', src:'Mercados globales', h:'Fuerte corrección en las empresas tecnológicas',
+        d:'Las principales plazas cierran con caídas de entre 30% y 45% en el sector tecnológico. El temor a una recesión y la suba de las tasas de interés en Estados Unidos empujaron a los inversores a desprenderse de los activos más riesgosos.',
+        clave:'El titular explica POR QUÉ cayeron. No es azar ni castigo: son las tasas y el miedo a la recesión.' },
+      { tag:'🛡️', src:'Renta fija', h:'Los bonos aguantan la tormenta y siguen pagando su cupón',
+        d:'Mientras las acciones se derrumbaban, los bonos uruguayos y los del Tesoro estadounidense se movieron apenas. Los tenedores cobraron igual sus intereses del año.',
+        clave:'Este es el momento de la clase: los que diversificaron están viendo la diferencia en su propia pantalla.' },
+      { tag:'🗣️', src:'Redes sociales', h:'Circula un rumor: "esto recién empieza, vendan todo ya"',
+        d:'Un video que asegura que las bolsas van a seguir cayendo durante años acumula millones de reproducciones. Ningún dato lo respalda; ningún organismo lo confirmó.',
+        clave:'DISTRACTOR a propósito. Sirve para preguntarles después: ¿quién le creyó? ¿quién vendió por miedo? Vender acá convierte una caída pasajera en una pérdida definitiva.' }
+    ],
+    3: [
+      { tag:'📈', src:'Mercados globales', h:'Las bolsas se recuperan con fuerza y superan los valores previos',
+        d:'Los resultados de las empresas fueron mejores de lo esperado y se despejó el escenario de recesión. Las tecnológicas rebotaron por encima del nivel que tenían antes de la caída.',
+        clave:'Los que aguantaron recuperaron y ganaron. Los que vendieron en el piso se perdieron la suba: la pérdida les quedó.' },
+      { tag:'🇺🇾', src:'Deuda soberana', h:'El bono uruguayo 2033 llega a su valor nominal',
+        d:'Cierra en 100 tras haber pagado tres cupones anuales de 5,1%. Quien lo compró a 98,5 y lo mantuvo, cobró los intereses y además recuperó la diferencia de precio.',
+        clave:'Riesgo bajo, retorno bajo pero previsible: exactamente lo que necesitaba la familia del abuelo.' },
+      { tag:'⚠️', src:'Advertencia', h:'Los analistas recuerdan que esta recuperación no estaba garantizada',
+        d:'La suba de este año fue tan rápida como la caída anterior. Nada aseguraba que ocurriera, y en otros episodios históricos la recuperación llevó muchos años.',
+        clave:'CLAVE PARA EL CIERRE: el que apostó todo a una sola acción ganó, pero esta vez. Preguntales qué habría pasado si la recuperación no llegaba.' }
+    ]
+  },
   cases: [
     {
       id:'jubilacion', icon:'🧓', title:'La jubilación del abuelo',
@@ -323,7 +379,7 @@ const GAME_DATA = {
       goalText:'Ganar al menos USD 3.600 en 3 años (6% anual) sin arriesgar demasiado el capital.',
       metaRet:0.18, protegeCapital:true,
       perfil:{min:0.10, max:0.40, label:'conservador',
-              txt:'Como el abuelo va a necesitar la plata pronto, entre el 10% y el 40% del portafolio debería estar en activos de riesgo (acciones y fondo). El resto, en bonos y Letras.'}
+              txt:'Como el abuelo va a necesitar el dinero pronto, entre el 10% y el 40% del portafolio debería estar en activos de riesgo (acciones y fondo). El resto, en bonos y Letras.'}
     },
     {
       id:'vivienda', icon:'🏠', title:'La primera vivienda',
@@ -464,9 +520,9 @@ const Engine = {
    SCORE — puntaje de la dinámica (sobre 100, + hasta 5 de bonus)
 
    40  Meta cumplida       — contra la meta de la propia familia
-   30  Diversificación     — promedio de las ruedas, no sólo el final
+   30  Diversificación     — promedio de las rondas, no sólo el final
    20  Perfil de riesgo    — coherencia con el mandato de la familia
-   10  Disciplina          — no vender con pérdida, no dejar plata ociosa
+   10  Disciplina          — no vender con pérdida, no dejar dinero ocioso
    +5  Bonus por superar la meta (techo bajo a propósito)
    ================================================================ */
 const SCORE_W = { meta:40, div:30, perfil:20, disc:10, bonus:5 };
@@ -481,7 +537,7 @@ const LOSS_TOL   = 0.05;   // pérdidas realizadas por 5% del capital = 0 puntos
 const Score = {
   clamp(x, a=0, b=1){ return Math.max(a, Math.min(b, x)); },
 
-  /* Foto de la composición al cerrar una rueda */
+  /* Foto de la composición al cerrar una ronda */
   snapshot(pf, round){
     const parts = [];
     let risk = 0, total = 0;
@@ -516,7 +572,7 @@ const Score = {
     pf.snaps.sort((a,b)=>a.round-b.round);
   },
 
-  /* Puntaje completo. round = rueda en la que se valúa (3 al cierre). */
+  /* Puntaje completo. round = ronda en la que se valúa (3 al cierre). */
   compute(pf, caseObj, round){
     const B = GAME_DATA.budget;
     const value = Engine.value(pf, round);
@@ -546,7 +602,7 @@ const Score = {
     const perfilFrac = perfilFracs.reduce((a,b)=>a+b, 0) / perfilFracs.length;
     const perfil = SCORE_W.perfil * perfilFrac;
 
-    /* --- 10 · DISCIPLINA (6 no vender con pérdida + 4 no dejar plata quieta) --- */
+    /* --- 10 · DISCIPLINA (6 no vender con pérdida + 4 no dejar dinero quieto) --- */
     const loss = pf.realizedLoss || 0;
     const noPanicFrac = this.clamp(1 - loss / (LOSS_TOL * B));
     const avgCash = snaps.reduce((a,s)=>a+s.cashShare, 0) / snaps.length;
@@ -596,7 +652,7 @@ const Score = {
     if(sc.loss > 0)
       f.push({ico:'😰', txt:'Vendieron con pérdida por ' + Engine.fmtUSD(sc.loss) + '. Vender cuando todo cae convierte una caída pasajera en una pérdida definitiva.'});
     if(sc.avgCash > CASH_TOL)
-      f.push({ico:'💤', txt:'Dejaron en promedio ' + Math.round(sc.avgCash*100) + '% en efectivo quieto. La plata en el bolsillo no rinde: para eso están las Letras.'});
+      f.push({ico:'💤', txt:'Dejaron en promedio ' + Math.round(sc.avgCash*100) + '% en efectivo quieto. El dinero en el bolsillo no rinde: para eso están las Letras.'});
     return f;
   },
 
@@ -730,7 +786,7 @@ function route(){
 window.addEventListener('hashchange', route);
 
 /* ================================================================
-   BELL — campana de cambio de rueda
+   BELL — campana de cambio de ronda
    ================================================================ */
 function ringBell(title, sub, ms=3800){
   const o = document.getElementById('bell-overlay');
@@ -740,6 +796,18 @@ function ringBell(title, sub, ms=3800){
   clearTimeout(ringBell._t);
   ringBell._t = setTimeout(()=>o.classList.add('hidden'), ms);
 }
+/* Render de las noticias de una ronda. conClave=true sólo para el coordinador. */
+function renderNews(round, conClave){
+  const items = (GAME_DATA.news && GAME_DATA.news[round]) || [];
+  if(!items.length) return '';
+  return items.map(n=>`<div class="news">
+    <div class="src"><span>${n.tag}</span><span>${n.src}</span></div>
+    <h4>${n.h}</h4>
+    <p>${n.d}</p>
+    ${conClave && n.clave ? `<div class="clave">🎤 <b>Para comentar:</b> ${n.clave}</div>` : ''}
+  </div>`).join('');
+}
+
 const ROUND_SUBS = {
   1:'Se abre el mercado — armen su portafolio',
   2:'Los precios cambiaron — pueden comprar y vender',
@@ -768,15 +836,33 @@ const Monitor = {
     this.render();
   },
 
+  /* Banda de titulares: rota cada 9 segundos, como el zócalo de un canal */
+  renderNews(){
+    const box = document.getElementById('mon-news');
+    if(!box) return;
+    const items = (GAME_DATA.news && GAME_DATA.news[this.round]) || [];
+    clearInterval(this._newsTimer);
+    if(!items.length){ box.innerHTML = ''; return; }
+    let i = 0;
+    const pintar = () => {
+      const n = items[i % items.length];
+      box.innerHTML = `<span class="lbl">${n.tag} ${n.src}</span>
+        <div class="txt">${n.h}<div class="sub">${n.d}</div></div>`;
+      i++;
+    };
+    pintar();
+    this._newsTimer = setInterval(pintar, 9000);
+  },
+
   setRound(r, bell){
     if(r===this.round){ this.render(); return; }
     this.round = r;
-    if(bell!==false) ringBell('¡SUENA LA CAMPANA!  RUEDA '+r, ROUND_SUBS[r]||'');
+    if(bell!==false) ringBell('¡SUENA LA CAMPANA!  RONDA '+r, ROUND_SUBS[r]||'');
     this.render(true);
   },
 
   render(flash){
-    document.getElementById('mon-round').textContent = 'RUEDA '+this.round+' DE '+GAME_DATA.rounds;
+    document.getElementById('mon-round').textContent = 'RONDA '+this.round+' DE '+GAME_DATA.rounds;
     const grid = document.getElementById('mon-grid');
     grid.innerHTML = GAME_DATA.assets.map(a=>{
       const p = a.prices[this.round-1];
@@ -817,6 +903,7 @@ const Monitor = {
       return `<span>${a.ticker} <b class="${cls}">${p.toFixed(2).replace('.',',')} ${arrow} ${Engine.pct(chg)}</b></span>`;
     }).join('');
     document.getElementById('mon-tape').innerHTML = tape + tape + tape + tape;
+    this.renderNews();
   }
 };
 
@@ -923,7 +1010,7 @@ const Grupo = {
   },
   broadcast(){ if(!this.st.autonomous && Sync.mode!=='off') Sync.sendGroup(this.publicGroup()); },
 
-  /* ---------- ruedas ---------- */
+  /* ---------- rondas ---------- */
   advanceTo(r){
     const st = this.st;
     while(st.round < r){
@@ -932,7 +1019,7 @@ const Grupo = {
     }
     st.draft = {};
     st.step = (st.round>=3) ? 'final' : 'results';
-    ringBell('¡SUENA LA CAMPANA!  RUEDA '+st.round, ROUND_SUBS[st.round]||'');
+    ringBell('¡SUENA LA CAMPANA!  RONDA '+st.round, ROUND_SUBS[st.round]||'');
     this.save(); this.broadcast(); this.render();
   },
 
@@ -1003,7 +1090,7 @@ const Grupo = {
     const st = this.st;
     return `<div class="topbar">
       <span class="brand">BOLSA <span class="tick">📊</span> ${st.name?('· '+st.name):''}</span>
-      <span class="round-pill">Rueda <span class="n">${st.round}</span>/${GAME_DATA.rounds}</span>
+      <span class="round-pill">Ronda <span class="n">${st.round}</span>/${GAME_DATA.rounds}</span>
       <span class="conn-pill"></span>
       <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="Grupo.reset()">Reiniciar</button>
     </div>`;
@@ -1062,17 +1149,17 @@ const Grupo = {
   rReglas(){
     return `<div class="card" style="margin-top:6px">
       <h3 style="font-size:15px;margin-bottom:10px">🏆 Cómo se gana esta competencia</h3>
-      <p class="sub" style="font-family:var(--sans);margin-bottom:10px">No gana quien más plata junta,
+      <p class="sub" style="font-family:var(--sans);margin-bottom:10px">No gana quien más dinero junta,
         sino quien invierte <b>mejor</b>. El puntaje es sobre 100:</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse;line-height:1.5">
         <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">40</td>
             <td><b>Meta cumplida</b> — llegar a la meta de tu familia. Pasarse casi no suma.</td></tr>
         <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">30</td>
-            <td><b>Diversificación</b> — no poner todo en un solo activo. Se mide en las dos ruedas.</td></tr>
+            <td><b>Diversificación</b> — no poner todo en un solo activo. Se mide en las dos rondas.</td></tr>
         <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">20</td>
             <td><b>Perfil de riesgo</b> — que el riesgo sea el que esa familia puede tolerar.</td></tr>
         <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">10</td>
-            <td><b>Disciplina</b> — no vender con pérdida y no dejar plata quieta.</td></tr>
+            <td><b>Disciplina</b> — no vender con pérdida y no dejar dinero quieto.</td></tr>
       </table>
       <p class="hint" style="margin-top:10px">El Fondo Indexado cuenta como 3 activos, porque adentro
         ya está diversificado.</p>
@@ -1091,10 +1178,15 @@ const Grupo = {
       <div class="stat"><div class="lbl">Meta 🎯</div><div class="val" style="font-size:13.5px;font-family:var(--sans)">${c?c.goalText:''}</div></div>
     </div>
     <div class="g-section">
-      <div class="step-title">${isR2?'Rueda '+st.round+' — pueden vender y comprar':'Rueda 1 — armen su portafolio'}</div>
+      <div class="step-title">${isR2?'Ronda '+st.round+' — pueden vender y comprar':'Ronda 1 — armen su portafolio'}</div>
       <p class="step-sub">${isR2
         ? 'Los precios cambiaron. Pueden vender activos (botón −) para recuperar efectivo y comprar otros (botón +).'
         : 'Compren activos con sus USD '+Engine.fmt(GAME_DATA.budget)+'. Piensen en el riesgo de cada uno… y no pongan todos los huevos en la misma canasta.'}</p>
+      <details ${st.round===1?'open':''} style="margin-bottom:12px">
+        <summary style="cursor:pointer;color:var(--gold);font-weight:800;font-size:14px;
+                        letter-spacing:.5px;padding:10px 0">📰 Noticias del mercado</summary>
+        <div style="margin-top:8px">${renderNews(st.round, false)}</div>
+      </details>
       ${GAME_DATA.assets.map(a=>{
         const px = Engine.price(a.id, st.round);
         const owned = st.pf.holdings[a.id]||0;
@@ -1194,7 +1286,7 @@ const Grupo = {
       ${this.rMiniPortfolio()}
       ${st.autonomous && st.confirmed[st.round] ? `
         <button class="btn btn-primary btn-big" onclick="Grupo.advanceTo(${nextR})">
-          🔔 El coordinador anunció la Rueda ${nextR}
+          🔔 El coordinador anunció la Ronda ${nextR}
         </button>` : ''}
     </div>`;
   },
@@ -1247,15 +1339,17 @@ const Grupo = {
         ${acc.coupons?('cupones de bonos por <b>'+Engine.fmtUSD(acc.coupons)+'</b>. '):''}
         ${acc.lrmInt?('intereses de las Letras por <b>'+Engine.fmtUSD(acc.lrmInt)+'</b>. '):''}
         Ya están acreditados en su efectivo: pueden reinvertirlos.</div>`:''}
-      ${this.rComentarioRueda()}
+      <h2 class="sec">📰 Noticias del mercado</h2>
+      ${renderNews(st.round, false)}
+      ${this.rComentarioRonda()}
       <button class="btn btn-primary btn-big" style="width:100%;margin-top:14px" onclick="Grupo.st.step='trade';Grupo.save();Grupo.render()">
-        ➜ Ir a operar (Rueda ${st.round})
+        ➜ Ir a operar (Ronda ${st.round})
       </button>
     </div>`;
   },
 
   /* Comentario derivado de lo que realmente pasó con los precios */
-  rComentarioRueda(){
+  rComentarioRonda(){
     const st = this.st;
     const chg = a => { const p0=a.prices[st.round-2], p1=a.prices[st.round-1]; return (p1-p0)/p0; };
     const acc = GAME_DATA.assets.filter(a=>a.type==='stock');
@@ -1271,7 +1365,7 @@ const Grupo = {
       txt = `📈 Las acciones subieron en promedio <b>${Engine.pct(pa)}</b>, mucho más que los bonos
              (${Engine.pct(pb)}). Más retorno vino con más riesgo: la próxima caída también va a ser mayor.`;
     else
-      txt = `➡️ Rueda tranquila: las acciones se movieron ${Engine.pct(pa)} y los bonos ${Engine.pct(pb)}.
+      txt = `➡️ Ronda tranquila: las acciones se movieron ${Engine.pct(pa)} y los bonos ${Engine.pct(pb)}.
              Los que cobraron cupones e intereses ganaron igual, sin depender del precio.`;
     return `<div class="lesson">${txt}</div>`;
   },
@@ -1325,7 +1419,7 @@ const Grupo = {
       <h2 class="sec">Qué dice su resultado</h2>
       ${fb.map(f=>`<div class="fb"><span class="ico">${f.ico}</span><span>${f.txt}</span></div>`).join('')}
 
-      <h2 class="sec">La plata</h2>
+      <h2 class="sec">El dinero</h2>
       <div class="result-hero">
         <p style="color:var(--dim)">Con ${Engine.fmtUSD(GAME_DATA.budget)} iniciales terminaron con</p>
         <div class="big mono ${sc.ret>=0?'up':'down'}">${Engine.fmtUSD(sc.value)}</div>
@@ -1341,7 +1435,7 @@ const Grupo = {
       <div class="lesson">🎓 <b>Lo que muestra el juego:</b> las acciones subieron y bajaron mucho
         (<b>riesgo alto, retorno alto</b>); los bonos se movieron poco y pagaron intereses
         (<b>riesgo bajo, retorno bajo</b>); el fondo repartió el riesgo automáticamente.
-        Quien <b>diversificó</b> sufrió menos la caída de la Rueda 2 — y quien vendió en el peor
+        Quien <b>diversificó</b> sufrió menos la caída de la Ronda 2 — y quien vendió en el peor
         momento se perdió la recuperación. Invertir es para metas, no para adivinar el mercado.</div>
       ${st.pf.coupons||st.pf.lrmInterest?`<div class="lesson">💰 En total cobraron
         <b>${Engine.fmtUSD(st.pf.coupons + st.pf.lrmInterest)}</b> en cupones e intereses — dinero que
@@ -1388,7 +1482,7 @@ const Grupo = {
 };
 
 /* ================================================================
-   COORDINADOR — control de la sesión y de las ruedas
+   COORDINADOR — control de la sesión y de las rondas
    ================================================================ */
 const Coord = {
   session:null, groups:{}, manual:[], connected:false,
@@ -1436,13 +1530,13 @@ const Coord = {
 
   setRound(r){
     const phase = r>=3 ? 'final' : 'play';
-    const labels = {1:'¿Abrir la Rueda 1? Los grupos podrán comprar sus primeros activos.',
-                    2:'¿Pasar a la Rueda 2? Los precios cambian (las acciones caen) y los grupos podrán vender y comprar.',
+    const labels = {1:'¿Abrir la Ronda 1? Los grupos podrán comprar sus primeros activos.',
+                    2:'¿Pasar a la Ronda 2? Los precios cambian (las acciones caen) y los grupos podrán vender y comprar.',
                     3:'¿Tocar la campana final? Los precios se actualizan por última vez y se cierra el mercado.'};
     if(!confirm(labels[r])) return;
     this.session.state = {round:r, phase};
     Sync.sendState(this.session.state);
-    ringBell('RUEDA '+r+(r>=3?' — CIERRE':''), ROUND_SUBS[r]||'', 2200);
+    ringBell('RONDA '+r+(r>=3?' — CIERRE':''), ROUND_SUBS[r]||'', 2200);
     this.save(); this.render();
   },
 
@@ -1481,7 +1575,7 @@ const Coord = {
         <h1 style="font-size:28px">🎛️ Panel del coordinador</h1>
         <p class="hint">Creá una sesión para esta clase o feria. Los grupos entran con el código
           de 4 letras desde sus tablets o celulares, y el monitor de mercado se proyecta en la pantalla grande.
-          Si no hay internet ni red, igual podés coordinar las ruedas a viva voz y cargar los resultados con
+          Si no hay internet ni red, igual podés coordinar las rondas a viva voz y cargar los resultados con
           los códigos que muestra cada tablet al final.</p>
         <button class="btn btn-primary btn-big" onclick="Coord.create()">➕ Crear sesión nueva</button>
       </div>`;
@@ -1492,7 +1586,7 @@ const Coord = {
     const st = this.session.state;
     const groups = Object.values(this.groups).sort((a,b)=>b.value-a.value);
     const phaseTxt = st.phase==='lobby' ? 'Sala de espera — los grupos se están uniendo'
-                   : st.phase==='play' ? 'Rueda '+st.round+' en curso'
+                   : st.phase==='play' ? 'Ronda '+st.round+' en curso'
                    : 'Mercado cerrado — resultados finales';
 
     el.innerHTML = `
@@ -1510,20 +1604,24 @@ const Coord = {
           <p class="hint" style="margin-top:6px">Los grupos entran en <b>${location.origin==='null'||location.protocol==='file:'?'la app':location.host+location.pathname.replace(/index\.html$/,'')}</b> → “Grupo / Familia” con este código.</p>
         </div>
         <div class="card coord-steps">
-          <h2 class="sec" style="margin:0 0 4px">Control de ruedas</h2>
-          <button class="btn ${st.round===0?'btn-gold':''}" ${st.round>=1?'disabled':''} onclick="Coord.setRound(1)">🔔 1 · Abrir Rueda 1 — armar portafolios</button>
-          <button class="btn ${st.round===1?'btn-gold':''}" ${st.round!==1?'disabled':''} onclick="Coord.setRound(2)">🔔 2 · Rueda 2 — caen las acciones</button>
+          <h2 class="sec" style="margin:0 0 4px">Control de rondas</h2>
+          <button class="btn ${st.round===0?'btn-gold':''}" ${st.round>=1?'disabled':''} onclick="Coord.setRound(1)">🔔 1 · Abrir Ronda 1 — armar portafolios</button>
+          <button class="btn ${st.round===1?'btn-gold':''}" ${st.round!==1?'disabled':''} onclick="Coord.setRound(2)">🔔 2 · Ronda 2 — caen las acciones</button>
           <button class="btn ${st.round===2?'btn-gold':''}" ${st.round!==2?'disabled':''} onclick="Coord.setRound(3)">🔔 3 · Campana final — resultados</button>
           <p class="hint">La campana cambia los precios en el monitor y en las tablets de todos los grupos conectados.
-             Si un grupo juega sin conexión, anunciá el cambio de rueda a viva voz.</p>
+             Si un grupo juega sin conexión, anunciá el cambio de ronda a viva voz.</p>
           <button class="btn" onclick="window.open(location.pathname+'#monitor?sala='+Coord.session.code,'_blank')">📈 Abrir monitor de mercado</button>
         </div>
       </div>
       <div>
+        ${st.round>=1 ? `<div class="card" style="margin-bottom:16px">
+          <div class="news-title">📰 Noticias de la Ronda ${st.round} — para leer en voz alta</div>
+          ${renderNews(st.round, true)}
+        </div>` : ''}
         <div class="card">
           <h2 class="sec" style="margin:0 0 10px">Grupos conectados (${groups.length})</h2>
           ${groups.length? `<table class="groups-table"><tr>
-              <th></th><th>Familia</th><th>Rueda</th><th>Divers.</th><th>Valor</th><th>Puntaje</th><th>Meta</th></tr>
+              <th></th><th>Familia</th><th>Ronda</th><th>Divers.</th><th>Valor</th><th>Puntaje</th><th>Meta</th></tr>
             ${groups.map(g=>{
               const ret = g.value/GAME_DATA.budget - 1;
               const c = GAME_DATA.cases.find(c=>c.id===g.caseId);
@@ -1600,9 +1698,9 @@ const Coord = {
       <p class="hint" style="margin-top:10px"><b>M</b> meta (40) · <b>D</b> diversificación (30) ·
         <b>P</b> perfil de riesgo (20) · <b>Di</b> disciplina (10).</p>
       <div class="lesson" style="margin-top:12px">🎤 <b>Para el cierre:</b> mostrá la columna de retorno
-        al lado de la del puntaje. Casi siempre hay un grupo que ganó más plata pero quedó abajo en el
+        al lado de la del puntaje. Casi siempre hay un grupo que ganó más dinero pero quedó abajo en el
         ranking. Esa es la conversación: ¿ganaron por buenas decisiones o porque salió bien la apuesta?
-        ¿Qué hubiera pasado si en la Rueda 3 las acciones seguían cayendo?</div>
+        ¿Qué hubiera pasado si en la Ronda 3 las acciones seguían cayendo?</div>
     </div>`;
   }
 };
