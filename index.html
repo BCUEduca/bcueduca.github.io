@@ -195,6 +195,10 @@
   .pod .nm{font-weight:800;font-size:15px;margin:4px 0}
   .pod .vl{font-family:var(--mono);color:var(--dim);font-size:13px}
   .pod.p1{height:190px;border-color:var(--gold)} .pod.p2{height:150px} .pod.p3{height:120px}
+  .mcard .since{display:flex;justify-content:space-between;align-items:baseline;margin-top:5px;
+                 padding-top:5px;border-top:1px dashed var(--line);font-size:clamp(10px,1vw,13px)}
+  .mcard .since .lb{color:var(--faint);letter-spacing:.5px;text-transform:uppercase}
+  .mcard .since .vl{font-family:var(--mono);font-weight:800;font-size:clamp(12px,1.2vw,16px)}
   /* --- noticias --- */
   .news{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--gold);
         border-radius:10px;padding:12px 14px;margin-bottom:10px}
@@ -270,6 +274,10 @@
     <button class="btn" onclick="Monitor.setRound(1)">R1</button>
     <button class="btn" onclick="Monitor.setRound(2)">R2</button>
     <button class="btn" onclick="Monitor.setRound(3)">R3</button>
+    <span style="color:var(--faint);font-size:12px;padding:0 4px">cierre</span>
+    <button class="btn" onclick="Monitor.setScen('A')">A</button>
+    <button class="btn" onclick="Monitor.setScen('B')">B</button>
+    <button class="btn" onclick="Monitor.setScen('C')">C</button>
     <button class="btn" onclick="location.hash=''">⌂</button>
   </div>
 </div>
@@ -311,29 +319,38 @@ const GAME_DATA = {
     },
     {
       id:'fund', name:'Fondo Indexado Global', ticker:'WORLD FUND', type:'fund', typeLabel:'FONDO',
-      coupon:0, prices:[100, 92, 112],
+      coupon:0, prices:[100, 92, 112],   // invierte en miles de empresas: no depende de ninguna
       history:[62,68,66,74,80,78,88,92,95,100],
       desc:'Fondo que invierte en miles de empresas y bonos de todo el mundo a la vez. Diversificación automática.'
     },
     {
       id:'meli', name:'MercadoLibre', ticker:'MELI', type:'stock', typeLabel:'ACCIÓN',
-      coupon:0, prices:[60, 42, 78],
+      coupon:0, prices:[60, 42, 63], r3:{W:102, M:63, L:30},
       history:[18,25,22,38,55,48,42,50,57,60],
       desc:'El gigante latinoamericano del comercio electrónico y los pagos digitales (Mercado Pago).'
     },
     {
       id:'nvda', name:'NVIDIA', ticker:'NVDA', type:'stock', typeLabel:'ACCIÓN',
-      coupon:0, prices:[45, 25, 70],
+      coupon:0, prices:[45, 25, 76], r3:{W:76, M:47, L:22},
       history:[8,12,10,16,26,22,30,38,42,45],
       desc:'Diseña los chips que hacen posible los videojuegos y la inteligencia artificial.'
     },
     {
       id:'nflx', name:'Netflix', ticker:'NFLX', type:'stock', typeLabel:'ACCIÓN',
-      coupon:0, prices:[50, 30, 62],
+      coupon:0, prices:[50, 30, 25], r3:{W:85, M:52, L:25},
       history:[15,22,28,26,35,42,40,46,52,50],
       desc:'La plataforma de series y películas por streaming más grande del mundo.'
     }
   ],
+  /* Escenarios de cierre. En la Ronda 3 la recuperación es despareja: una acción
+     vuelve con fuerza (W), otra queda como estaba (M) y otra no se recupera (L).
+     El coordinador sortea la letra, así nadie —ni él— puede saberlo de antemano. */
+  scenarios: {
+    A: {nvda:'W', meli:'M', nflx:'L'},
+    B: {meli:'W', nflx:'M', nvda:'L'},
+    C: {nflx:'W', nvda:'M', meli:'L'}
+  },
+
   /* Noticias que se difunden al abrir cada ronda. 'clave' la ve sólo el coordinador. */
   news: {
     1: [
@@ -360,45 +377,61 @@ const GAME_DATA = {
         d:'Un video que asegura que las bolsas van a seguir cayendo durante años acumula millones de reproducciones. Ningún dato lo respalda; ningún organismo lo confirmó.',
         clave:'DISTRACTOR a propósito. Sirve para preguntarles después: ¿quién le creyó? ¿quién vendió por miedo? Vender acá convierte una caída pasajera en una pérdida definitiva.' }
     ],
-    3: [
-      { tag:'📈', src:'Mercados globales', h:'Las bolsas se recuperan con fuerza y superan los valores previos',
-        d:'Los resultados de las empresas fueron mejores de lo esperado y se despejó el escenario de recesión. Las tecnológicas rebotaron por encima del nivel que tenían antes de la caída.',
-        clave:'Los que aguantaron recuperaron y ganaron. Los que vendieron en el piso se perdieron la suba: la pérdida les quedó.' },
-      { tag:'🇺🇾', src:'Deuda soberana', h:'El bono uruguayo 2033 llega a su valor nominal',
-        d:'Cierra en 100 tras haber pagado tres cupones anuales de 5,1%. Quien lo compró a 98,5 y lo mantuvo, cobró los intereses y además recuperó la diferencia de precio.',
-        clave:'Riesgo bajo, retorno bajo pero previsible: exactamente lo que necesitaba la familia del abuelo.' },
-      { tag:'⚠️', src:'Advertencia', h:'Los analistas recuerdan que esta recuperación no estaba garantizada',
-        d:'La suba de este año fue tan rápida como la caída anterior. Nada aseguraba que ocurriera, y en otros episodios históricos la recuperación llevó muchos años.',
-        clave:'CLAVE PARA EL CIERRE: el que apostó todo a una sola acción ganó, pero esta vez. Preguntales qué habría pasado si la recuperación no llegaba.' }
-    ]
+    3: 'DINAMICA'
   },
   cases: [
     {
       id:'jubilacion', icon:'🧓', title:'La jubilación del abuelo',
-      story:'Un integrante de la familia está por jubilarse. Entre la jubilación que va a cobrar y los gastos que planificó, le van a faltar unos USD 1.200 por año para vivir como quiere. Tiene USD 20.000 ahorrados y decidió invertirlos en la Bolsa.',
-      goalText:'Ganar al menos USD 3.600 en 3 años (6% anual) sin arriesgar demasiado el capital.',
-      metaRet:0.18, protegeCapital:true,
+      story:'Un integrante de la familia está por jubilarse. Entre la jubilación que va a cobrar y los gastos que planificó, le van a faltar unos USD 650 por año para vivir como quiere. Tiene USD 20.000 ahorrados y decidió invertirlos en la Bolsa.',
+      goalText:'Ganar al menos USD 2.000 en 3 años sin arriesgar demasiado el capital.',
+      metaRet:0.10, protegeCapital:true,
       perfil:{min:0.10, max:0.40, label:'conservador',
               txt:'Como el abuelo va a necesitar el dinero pronto, entre el 10% y el 40% del portafolio debería estar en activos de riesgo (acciones y fondo). El resto, en bonos y Letras.'}
     },
     {
       id:'vivienda', icon:'🏠', title:'La primera vivienda',
-      story:'Una pareja joven quiere comprar su primer apartamento. El banco les presta el 80% pero les exige tener ahorrado el 20%. Tienen USD 20.000 y necesitan llegar a USD 23.600 en 3 años para completar la entrega.',
-      goalText:'Ganar al menos USD 3.600 en 3 años (6% anual) para llegar a la entrega del apartamento.',
-      metaRet:0.18, protegeCapital:true,
+      story:'Una pareja joven quiere comprar su primer apartamento. El banco les presta el 80% pero les exige tener ahorrado el 20%. Tienen USD 20.000 y necesitan llegar a USD 22.400 en 3 años para completar la entrega.',
+      goalText:'Ganar al menos USD 2.400 en 3 años para llegar a la entrega del apartamento.',
+      metaRet:0.12, protegeCapital:true,
       perfil:{min:0.35, max:0.70, label:'equilibrado',
               txt:'Tienen una meta exigente pero un plazo definido: entre el 35% y el 70% en activos de riesgo (acciones y fondo), y el resto en bonos y Letras.'}
     },
     {
       id:'herencia', icon:'💼', title:'La herencia',
       story:'La familia recibió USD 20.000 por una herencia. No quieren perder nada de ese dinero, pero les gustaría hacerlo crecer lo más posible invirtiendo en la Bolsa.',
-      goalText:'Ganar al menos USD 3.000 en 3 años sin terminar nunca por debajo de los USD 20.000 iniciales.',
-      metaRet:0.15, protegeCapital:true,
+      goalText:'Ganar al menos USD 2.400 en 3 años sin terminar nunca por debajo de los USD 20.000 iniciales.',
+      metaRet:0.12, protegeCapital:true,
       perfil:{min:0.50, max:0.90, label:'agresivo',
               txt:'No tienen una fecha límite, así que pueden tolerar más riesgo: entre el 50% y el 90% en acciones y fondo. Pero ojo, prometieron no perder el capital.'}
     }
   ]
 };
+
+/* ================================================================
+   ESCENARIO DE CIERRE — define los precios de la Ronda 3
+   ================================================================ */
+let SCEN = 'A';
+
+function applyScenario(letter){
+  const map = GAME_DATA.scenarios[letter] || GAME_DATA.scenarios.A;
+  SCEN = GAME_DATA.scenarios[letter] ? letter : 'A';
+  for(const a of GAME_DATA.assets){
+    if(a.r3 && map[a.id]) a.prices[2] = a.r3[map[a.id]];
+  }
+  return SCEN;
+}
+function scenarioRoles(){
+  return GAME_DATA.scenarios[SCEN] || GAME_DATA.scenarios.A;
+}
+function assetByRole(role){
+  const map = scenarioRoles();
+  const id = Object.keys(map).find(k => map[k] === role);
+  return Engine ? GAME_DATA.assets.find(a=>a.id===id) : null;
+}
+function drawScenario(){
+  const ks = Object.keys(GAME_DATA.scenarios);
+  return applyScenario(ks[Math.floor(Math.random()*ks.length)]);
+}
 
 /* Libro de órdenes estático por activo y ronda (estilo pantalla de bolsa).
    Se genera de forma determinística alrededor del precio de la ronda. */
@@ -796,9 +829,37 @@ function ringBell(title, sub, ms=3800){
   clearTimeout(ringBell._t);
   ringBell._t = setTimeout(()=>o.classList.add('hidden'), ms);
 }
+/* Las noticias de la Ronda 3 dependen del escenario que salió sorteado */
+function newsRonda3(){
+  const W = assetByRole('W'), M = assetByRole('M'), L = assetByRole('L');
+  if(!W || !M || !L) return [];
+  const pct = (a) => Engine.pct((a.prices[2]-a.prices[0])/a.prices[0], 0);
+  return [
+    { tag:'📈', src:'Mercados globales', h:'La recuperación llegó, pero no para todos',
+      d:`Se despejó el escenario de recesión y las bolsas rebotaron. ${W.name} superó ampliamente
+         el valor que tenía antes de la caída (${pct(W)} en tres años), ${M.name} apenas volvió al
+         punto de partida (${pct(M)}) y ${L.name} no se recuperó: acumula ${pct(L)}.`,
+      clave:`Este es EL momento de la actividad. Preguntá quién tenía ${W.name} y quién tenía ${L.name}.
+             Ninguno de los dos sabía más que el otro: la diferencia fue suerte.` },
+    { tag:'💔', src:'Empresas', h:`${L.name} no logra revertir la caída`,
+      d:`La empresa perdió terreno frente a sus competidores y los analistas ya no esperan que
+         vuelva a los valores previos. Quien compró y mantuvo perdió la mitad de lo invertido en ella.`,
+      clave:'Acá aparece la pérdida permanente, que en la versión anterior del juego no existía. No toda caída se recupera: por eso no se apuesta todo a una sola empresa.' },
+    { tag:'🧺', src:'Fondos', h:'El fondo indexado cerró en positivo pese a todo',
+      d:`Como invierte en miles de empresas a la vez, el fondo se llevó la suba de ${W.name} sin
+         depender de haberla elegido, y la caída de ${L.name} le hizo apenas un raspón.
+         Cerró un 12% arriba del valor inicial.`,
+      clave:'La diversificación no adivina cuál va a ganar: se asegura de tener un pedazo de la que gane.' },
+    { tag:'🇺🇾', src:'Deuda soberana', h:'El bono uruguayo 2033 llega a su valor nominal',
+      d:'Cierra en 100 tras pagar tres cupones anuales de 5,1%. Quien lo compró a 98,5 y lo mantuvo cobró los intereses y además recuperó la diferencia de precio.',
+      clave:'Riesgo bajo, retorno bajo pero previsible: exactamente lo que necesitaba la familia del abuelo.' }
+  ];
+}
+
 /* Render de las noticias de una ronda. conClave=true sólo para el coordinador. */
 function renderNews(round, conClave){
-  const items = (GAME_DATA.news && GAME_DATA.news[round]) || [];
+  let items = (GAME_DATA.news && GAME_DATA.news[round]) || [];
+  if(items === 'DINAMICA') items = newsRonda3();
   if(!items.length) return '';
   return items.map(n=>`<div class="news">
     <div class="src"><span>${n.tag}</span><span>${n.src}</span></div>
@@ -811,7 +872,7 @@ function renderNews(round, conClave){
 const ROUND_SUBS = {
   1:'Se abre el mercado — armen su portafolio',
   2:'Los precios cambiaron — pueden comprar y vender',
-  3:'Cierre del mercado — resultados finales'
+  3:'Cierre del mercado — la recuperación no fue pareja'
 };
 
 /* ================================================================
@@ -830,9 +891,19 @@ const Monitor = {
       }, 1000);
       const params = new URLSearchParams((location.hash.split('?')[1]||''));
       Sync.connect(params.get('sala')||localStorage.getItem('bvm_code')||'BVM1', 'monitor', {
-        onState: st=>{ if(st && st.round && st.round!==this.round && st.phase!=='lobby') this.setRound(st.round, true); }
+        onState: st=>{
+          if(st && st.scen) applyScenario(st.scen);
+          if(st && st.round && st.round!==this.round && st.phase!=='lobby') this.setRound(st.round, true);
+        }
       });
     }
+    this.render();
+  },
+
+  /* Cambio manual del escenario de cierre (modo sin conexión) */
+  setScen(letra){
+    applyScenario(letra);
+    if(this.round === 3) ringBell('CIERRE — ESCENARIO ' + letra, 'La recuperación no fue pareja', 2000);
     this.render();
   },
 
@@ -891,6 +962,10 @@ const Monitor = {
           </table>
         </div>
         ${sparkSVG(series)}
+        ${this.round>1 ? (()=>{ const acum=(p-a.prices[0])/a.prices[0];
+            const c = acum>0.0005?'up':acum<-0.0005?'down':'flat';
+            return `<div class="since"><span class="lb">Desde el inicio</span>
+              <span class="vl ${c}">${Engine.pct(acum)}</span></div>`; })() : ''}
       </div>`;
     }).join('');
 
@@ -948,6 +1023,7 @@ const Grupo = {
       const saved = localStorage.getItem('bvm_grupo');
       this.st = saved ? JSON.parse(saved) : this.defaults();
     }
+    if(this.st.scen) applyScenario(this.st.scen);
     if(this.st.joined && !this.st.autonomous && Sync.mode==='off'){
       Sync.connect(this.st.sessionCode, 'group', {onState: s=>this.onState(s)});
     }
@@ -983,6 +1059,9 @@ const Grupo = {
   onState(state){
     if(!this.st || !this.st.joined) return;
     this.coordState = state;
+    if(state && state.scen && state.scen !== this.st.scen){
+      this.st.scen = applyScenario(state.scen); this.save();
+    }
     if(!state || state.phase==='lobby'){ this.render(); return; }
     if(state.round > this.st.round){
       this.advanceTo(state.round);
@@ -1009,6 +1088,13 @@ const Grupo = {
     };
   },
   broadcast(){ if(!this.st.autonomous && Sync.mode!=='off') Sync.sendGroup(this.publicGroup()); },
+
+  /* Cierre en modo autónomo: la letra define los precios finales */
+  cerrar(letra){
+    this.st.scen = applyScenario(letra);
+    this.save();
+    this.advanceTo(3);
+  },
 
   /* ---------- rondas ---------- */
   advanceTo(r){
@@ -1284,10 +1370,18 @@ const Grupo = {
       <p>${waitingOpen ? 'Mientras tanto, miren el monitor de precios y conversen la estrategia.'
                        : 'Cuando suene la campana, verán qué pasó con sus inversiones.'}</p>
       ${this.rMiniPortfolio()}
-      ${st.autonomous && st.confirmed[st.round] ? `
+      ${st.autonomous && st.confirmed[st.round] ? (nextR>=3 ? `
+        <div class="card" style="max-width:420px;width:100%">
+          <p style="font-size:14.5px;line-height:1.55;margin-bottom:12px">🔔 Cuando el coordinador anuncie
+            la <b>Ronda 3</b> va a decir también una <b>letra</b>. Toquen esa letra:</p>
+          <div style="display:flex;gap:8px">
+            ${Object.keys(GAME_DATA.scenarios).map(k=>`
+              <button class="btn btn-gold btn-big" style="flex:1" onclick="Grupo.cerrar('${k}')">${k}</button>`).join('')}
+          </div>
+        </div>` : `
         <button class="btn btn-primary btn-big" onclick="Grupo.advanceTo(${nextR})">
           🔔 El coordinador anunció la Ronda ${nextR}
-        </button>` : ''}
+        </button>`) : ''}
     </div>`;
   },
 
@@ -1432,11 +1526,12 @@ const Grupo = {
       <p class="hint" style="text-align:center;margin-top:6px">Este código lleva su puntaje y su resultado.
         Si no hay conexión, el coordinador lo ingresa para armar el ranking.</p>
 
-      <div class="lesson">🎓 <b>Lo que muestra el juego:</b> las acciones subieron y bajaron mucho
-        (<b>riesgo alto, retorno alto</b>); los bonos se movieron poco y pagaron intereses
-        (<b>riesgo bajo, retorno bajo</b>); el fondo repartió el riesgo automáticamente.
-        Quien <b>diversificó</b> sufrió menos la caída de la Ronda 2 — y quien vendió en el peor
-        momento se perdió la recuperación. Invertir es para metas, no para adivinar el mercado.</div>
+      <div class="lesson">🎓 <b>Lo que muestra el juego:</b> en la Ronda 2 cayeron todas las acciones,
+        pero en la Ronda 3 <b>sólo algunas volvieron</b>. Una nunca se recuperó: quien había puesto
+        todo ahí perdió la mitad de su dinero, y no por haber decidido mal, sino porque le tocó.
+        El fondo se llevó la suba de la ganadora sin necesidad de adivinar cuál era, y los bonos
+        pagaron sus intereses todos los años pasara lo que pasara.
+        <b>Diversificar no es apostar a varias: es dejar de depender de acertar.</b></div>
       ${st.pf.coupons||st.pf.lrmInterest?`<div class="lesson">💰 En total cobraron
         <b>${Engine.fmtUSD(st.pf.coupons + st.pf.lrmInterest)}</b> en cupones e intereses — dinero que
         ganaron aunque los precios no subieran. Eso es el <b>interés</b> trabajando para ustedes.</div>`:''}
@@ -1493,6 +1588,7 @@ const Coord = {
       if(saved){
         const s = JSON.parse(saved);
         this.session = s.session; this.groups = s.groups||{}; this.manual = s.manual||[];
+        if(this.session && this.session.state && this.session.state.scen) applyScenario(this.session.state.scen);
       }
     }
     if(this.session && !this.connected) this._connect();
@@ -1515,7 +1611,7 @@ const Coord = {
     const letters = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
     let code='';
     for(let i=0;i<4;i++) code += letters[Math.floor(Math.random()*letters.length)];
-    this.session = {code, state:{round:0, phase:'lobby'}};
+    this.session = {code, state:{round:0, phase:'lobby', scen:drawScenario()}};
     this.groups = {}; this.manual = [];
     this._connect();
     this.save(); this.render();
@@ -1532,9 +1628,11 @@ const Coord = {
     const phase = r>=3 ? 'final' : 'play';
     const labels = {1:'¿Abrir la Ronda 1? Los grupos podrán comprar sus primeros activos.',
                     2:'¿Pasar a la Ronda 2? Los precios cambian (las acciones caen) y los grupos podrán vender y comprar.',
-                    3:'¿Tocar la campana final? Los precios se actualizan por última vez y se cierra el mercado.'};
+                    3:'¿Tocar la campana final? La recuperación es despareja: una acción vuelve con fuerza, otra queda igual y otra no se recupera.'};
     if(!confirm(labels[r])) return;
-    this.session.state = {round:r, phase};
+    const scen = (this.session.state && this.session.state.scen) || drawScenario();
+    applyScenario(scen);
+    this.session.state = {round:r, phase, scen};
     Sync.sendState(this.session.state);
     ringBell('RONDA '+r+(r>=3?' — CIERRE':''), ROUND_SUBS[r]||'', 2200);
     this.save(); this.render();
@@ -1550,6 +1648,29 @@ const Coord = {
     this.save(); this.render();
   },
   delManual(i){ this.manual.splice(i,1); this.save(); this.render(); },
+
+  /* Qué salió sorteado para el cierre. Sólo lo ve el coordinador. */
+  rEscenario(){
+    const st = this.session.state;
+    const roles = scenarioRoles();
+    const nom = r => { const id = Object.keys(roles).find(k=>roles[k]===r);
+                       const a = GAME_DATA.assets.find(x=>x.id===id); return a?a.name:'—'; };
+    const oculto = st.round < 3;
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="news-title">🎲 Escenario de cierre — sorteado: ${st.scen||'A'}</div>
+      ${oculto ? `<p class="hint">El sorteo ya está hecho y guardado, pero conviene no mirarlo todavía:
+          si lo sabés, se te nota en la cara. Se revela solo al tocar la campana final.
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;margin-left:6px"
+                  onclick="Coord.spoiler=true;Coord.render()">Ver igual</button></p>`:''}
+      ${(!oculto || this.spoiler) ? `<table style="width:100%;font-size:14px;line-height:1.7">
+        <tr><td>📈 Se recupera con fuerza</td><td><b>${nom('W')}</b></td></tr>
+        <tr><td>➡️ Vuelve al punto de partida</td><td><b>${nom('M')}</b></td></tr>
+        <tr><td>📉 No se recupera nunca</td><td><b>${nom('L')}</b></td></tr>
+      </table>
+      <p class="hint" style="margin-top:8px">Los grupos que jueguen sin conexión tienen que tocar el botón
+        <b>${st.scen||'A'}</b> cuando anuncies la ronda final, para que les salgan estos mismos precios.</p>`:''}
+    </div>`;
+  },
 
   ranking(){
     const rows = [
@@ -1607,13 +1728,14 @@ const Coord = {
           <h2 class="sec" style="margin:0 0 4px">Control de rondas</h2>
           <button class="btn ${st.round===0?'btn-gold':''}" ${st.round>=1?'disabled':''} onclick="Coord.setRound(1)">🔔 1 · Abrir Ronda 1 — armar portafolios</button>
           <button class="btn ${st.round===1?'btn-gold':''}" ${st.round!==1?'disabled':''} onclick="Coord.setRound(2)">🔔 2 · Ronda 2 — caen las acciones</button>
-          <button class="btn ${st.round===2?'btn-gold':''}" ${st.round!==2?'disabled':''} onclick="Coord.setRound(3)">🔔 3 · Campana final — resultados</button>
+          <button class="btn ${st.round===2?'btn-gold':''}" ${st.round!==2?'disabled':''} onclick="Coord.setRound(3)">🔔 3 · Campana final — recuperación despareja</button>
           <p class="hint">La campana cambia los precios en el monitor y en las tablets de todos los grupos conectados.
              Si un grupo juega sin conexión, anunciá el cambio de ronda a viva voz.</p>
           <button class="btn" onclick="window.open(location.pathname+'#monitor?sala='+Coord.session.code,'_blank')">📈 Abrir monitor de mercado</button>
         </div>
       </div>
       <div>
+        ${this.rEscenario()}
         ${st.round>=1 ? `<div class="card" style="margin-bottom:16px">
           <div class="news-title">📰 Noticias de la Ronda ${st.round} — para leer en voz alta</div>
           ${renderNews(st.round, true)}
