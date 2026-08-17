@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Bolsa de Valores — Dinámica de Educación Financiera</title>
+<style>
+  :root{
+    --bg:#0a0e17; --bg2:#0f1524; --panel:#141b2e; --panel2:#1a2340;
+    --line:#243052; --txt:#e8edf7; --dim:#8b96b3; --faint:#5a6480;
+    --up:#22e07c; --up-dim:rgba(34,224,124,.12);
+    --down:#ff5d5d; --down-dim:rgba(255,93,93,.12);
+    --gold:#f5c542; --blue:#4da3ff; --violet:#9b7bff;
+    --mono:'Consolas','Roboto Mono',monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer;border:none}
+  input,select{font-family:inherit}
+  .hidden{display:none !important}
+  .mono{font-family:var(--mono)}
+  .up{color:var(--up)} .down{color:var(--down)} .gold{color:var(--gold)}
+
+  /* ---------- generic UI ---------- */
+  .btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:10px;
+       padding:12px 20px;font-size:16px;font-weight:600;transition:filter .15s, transform .05s}
+  .btn:active{transform:scale(.98)}
+  .btn:hover{filter:brightness(1.2)}
+  .btn-primary{background:linear-gradient(135deg,#1d6fd1,#4da3ff);border:none;color:#fff}
+  .btn-gold{background:linear-gradient(135deg,#c99a1e,#f5c542);border:none;color:#1a1400}
+  .btn-danger{background:linear-gradient(135deg,#a03030,#ff5d5d);border:none;color:#fff}
+  .btn-ghost{background:transparent;border:1px dashed var(--line);color:var(--dim)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+  .btn-big{font-size:19px;padding:16px 26px;border-radius:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .input{background:var(--bg2);border:1px solid var(--line);border-radius:10px;color:var(--txt);
+         padding:12px 14px;font-size:17px;width:100%}
+  .input:focus{outline:2px solid var(--blue);border-color:transparent}
+  .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.4px}
+  .tag-bond{background:rgba(77,163,255,.15);color:var(--blue)}
+  .tag-fund{background:rgba(155,123,255,.15);color:var(--violet)}
+  .tag-stock{background:rgba(245,197,66,.15);color:var(--gold)}
+  .chg{font-family:var(--mono);font-weight:700}
+  .chg.up::before{content:"▲ "} .chg.down::before{content:"▼ "}
+  .chg.flat{color:var(--dim)} .chg.flat::before{content:"— "}
+
+  /* ---------- home ---------- */
+  #view-home{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+             padding:32px;gap:14px;text-align:center;
+             background:radial-gradient(1200px 600px at 50% -10%, #16234a 0%, var(--bg) 60%)}
+  #view-home h1{font-size:clamp(30px,5vw,52px);letter-spacing:1px}
+  #view-home h1 .tick{color:var(--gold)}
+  #view-home .sub{color:var(--dim);font-size:17px;max-width:560px;margin-bottom:18px}
+  .role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;width:100%;max-width:860px}
+  .role-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 20px;
+             display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--txt);
+             transition:transform .15s, border-color .15s}
+  .role-card:hover{transform:translateY(-4px);border-color:var(--blue)}
+  .role-card .ico{font-size:42px}
+  .role-card b{font-size:19px}
+  .role-card span{color:var(--dim);font-size:14px;line-height:1.4}
+  .conn-note{color:var(--faint);font-size:13px;margin-top:20px}
+
+  /* ---------- top bars ---------- */
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--bg2);
+          border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  .topbar .brand{font-weight:800;letter-spacing:1px;font-size:15px;white-space:nowrap}
+  .topbar .brand .tick{color:var(--gold)}
+  .round-pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+              padding:6px 16px;font-weight:700;font-size:14px;white-space:nowrap}
+  .round-pill .n{color:var(--gold)}
+  .conn-pill{margin-left:auto;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--faint)}
+  .dot.on{background:var(--up);box-shadow:0 0 8px var(--up)}
+  .dot.local{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+
+  /* ---------- MONITOR ---------- */
+  #view-monitor{min-height:100%;display:flex;flex-direction:column;background:var(--bg)}
+  .mon-head{display:flex;align-items:baseline;gap:20px;padding:16px 26px 8px}
+  .mon-head h1{font-size:clamp(18px,2.4vw,30px);letter-spacing:2px}
+  .mon-head h1 .tick{color:var(--gold)}
+  .mon-round{font-size:clamp(15px,1.8vw,22px);color:var(--gold);font-weight:800;letter-spacing:1px}
+  .mon-clock{margin-left:auto;font-family:var(--mono);color:var(--dim);font-size:clamp(14px,1.6vw,20px)}
+  .mon-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:10px;padding:10px 14px}
+  @media (max-width:1000px){.mon-grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:640px){.mon-grid{grid-template-columns:1fr}}
+  .mcard{background:linear-gradient(180deg,var(--panel) 0%,var(--bg2) 100%);border:1px solid var(--line);
+         border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden}
+  .mcard .head{display:flex;align-items:center;gap:8px}
+  .mcard .name{font-weight:700;font-size:clamp(12px,1.05vw,15px);letter-spacing:.3px;line-height:1.2}
+  .mcard .tk{font-family:var(--mono);color:var(--dim);font-size:12px}
+  .mcard .pricerow{display:flex;align-items:baseline;gap:12px}
+  .mcard .price{font-family:var(--mono);font-size:clamp(26px,2.6vw,40px);font-weight:800}
+  .mcard .price.flash-up{animation:flashUp 1.2s ease}
+  .mcard .price.flash-down{animation:flashDown 1.2s ease}
+  @keyframes flashUp{0%{color:var(--up);text-shadow:0 0 18px var(--up)}100%{color:var(--txt)}}
+  @keyframes flashDown{0%{color:var(--down);text-shadow:0 0 18px var(--down)}100%{color:var(--txt)}}
+  .mcard .chg{font-size:clamp(13px,1.2vw,17px)}
+  .book{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--mono);font-size:clamp(10px,.9vw,12px)}
+  .book table{width:100%;border-collapse:collapse}
+  .book caption{text-align:left;color:var(--faint);font-size:10px;letter-spacing:1px;padding-bottom:2px}
+  .book td{padding:1px 4px;white-space:nowrap}
+  .book .q{color:var(--dim);text-align:right}
+  .book .bid td.p{color:var(--up)} .book .ask td.p{color:var(--down)}
+  .spark{width:100%;height:44px;min-height:34px}
+  .spark polyline{fill:none;stroke:var(--blue);stroke-width:2}
+  .spark .area{fill:url(#sparkfill);stroke:none}
+  .mon-tape{background:#05070d;border-top:1px solid var(--line);overflow:hidden;white-space:nowrap;padding:9px 0}
+  .tape-inner{display:inline-block;animation:tape 40s linear infinite;font-family:var(--mono);font-size:16px}
+  .tape-inner span{margin:0 26px}
+  @keyframes tape{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  .mon-controls{position:fixed;bottom:14px;right:14px;display:flex;gap:8px;opacity:.25;transition:opacity .2s;z-index:30}
+  .mon-controls:hover{opacity:1}
+
+  /* bell overlay */
+  #bell-overlay{position:fixed;inset:0;background:rgba(4,6,12,.88);display:flex;flex-direction:column;
+                align-items:center;justify-content:center;gap:16px;z-index:100;backdrop-filter:blur(4px)}
+  #bell-overlay .bell{font-size:110px;animation:ring 1s ease infinite}
+  @keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(18deg)}40%{transform:rotate(-14deg)}
+                  60%{transform:rotate(9deg)}80%{transform:rotate(-5deg)}}
+  #bell-overlay h2{font-size:clamp(26px,4vw,46px);letter-spacing:2px;color:var(--gold)}
+  #bell-overlay p{color:var(--dim);font-size:18px}
+
+  /* ---------- GRUPO ---------- */
+  #view-grupo{max-width:680px;margin:0 auto;padding-bottom:90px}
+  .g-section{padding:16px}
+  .meta-bar{display:flex;gap:10px;flex-wrap:wrap;padding:12px 16px}
+  .stat{flex:1;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .stat .lbl{color:var(--dim);font-size:11.5px;letter-spacing:.6px;text-transform:uppercase}
+  .stat .val{font-family:var(--mono);font-size:21px;font-weight:800;margin-top:2px}
+  .asset-row{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+  .asset-row .r1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .asset-row .nm{font-weight:700;font-size:15.5px}
+  .asset-row .px{margin-left:auto;font-family:var(--mono);font-size:19px;font-weight:800}
+  .asset-row .r2{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .qty-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .qty-ctrl button{width:44px;height:44px;font-size:22px;font-weight:800;background:var(--panel2);color:var(--txt)}
+  .qty-ctrl input{width:74px;height:44px;text-align:center;background:var(--bg2);border:none;color:var(--txt);
+                  font-family:var(--mono);font-size:18px;font-weight:700}
+  .qty-ctrl input:focus{outline:none;background:#101a33}
+  .asset-row .sub{color:var(--dim);font-size:13px;margin-top:6px;font-family:var(--mono)}
+  .asset-row .own{font-size:13px;color:var(--blue);font-family:var(--mono)}
+  .cashbar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--line);
+           padding:10px 16px;display:flex;align-items:center;gap:14px;z-index:25}
+  .cashbar .inner{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:14px;width:100%}
+  .cashbar .c-lbl{color:var(--dim);font-size:12px}
+  .cashbar .c-val{font-family:var(--mono);font-size:20px;font-weight:800}
+  .cashbar .warn{color:var(--down)}
+  .case-card{border-left:4px solid var(--gold)}
+  .case-card h3{color:var(--gold);margin-bottom:6px}
+  .case-card p{color:var(--txt);line-height:1.5;font-size:15px}
+  .case-card .meta{margin-top:10px;background:var(--bg2);border-radius:10px;padding:10px 14px;
+                   font-family:var(--mono);font-size:15px}
+  .donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+  .legend{font-size:13.5px;display:flex;flex-direction:column;gap:5px}
+  .legend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px}
+  .result-hero{text-align:center;padding:26px 16px}
+  .result-hero .big{font-family:var(--mono);font-size:44px;font-weight:800}
+  .result-hero .pct{font-size:22px;font-family:var(--mono);font-weight:700}
+  .goal-badge{display:inline-block;margin-top:10px;padding:8px 18px;border-radius:999px;font-weight:800;font-size:15px}
+  .goal-ok{background:var(--up-dim);color:var(--up);border:1px solid var(--up)}
+  .goal-no{background:var(--down-dim);color:var(--down);border:1px solid var(--down)}
+  .goal-mid{background:rgba(245,197,66,.12);color:var(--gold);border:1px solid var(--gold)}
+  .lesson{background:var(--bg2);border:1px dashed var(--line);border-radius:12px;padding:14px;color:var(--dim);
+          font-size:14px;line-height:1.55;margin-top:14px}
+  .lesson b{color:var(--txt)}
+  .code-box{font-family:var(--mono);font-size:34px;font-weight:800;letter-spacing:6px;color:var(--gold);
+            background:var(--bg2);border:2px dashed var(--gold);border-radius:14px;padding:16px;text-align:center}
+  .step-title{font-size:22px;font-weight:800;padding:18px 16px 6px}
+  .step-sub{color:var(--dim);padding:0 16px 12px;font-size:14.5px;line-height:1.5}
+  .waiting{display:flex;flex-direction:column;align-items:center;gap:16px;padding:60px 20px;text-align:center;color:var(--dim)}
+  .pulse{width:64px;height:64px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;
+         justify-content:center;font-size:30px;animation:pulse 1.6s ease infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(77,163,255,.4)}50%{box-shadow:0 0 0 18px rgba(77,163,255,0)}}
+  .varrow{font-family:var(--mono);font-size:13.5px}
+
+  /* ---------- COORDINADOR ---------- */
+  #view-coord{max-width:1100px;margin:0 auto;padding:16px}
+  .coord-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+  @media (max-width:900px){.coord-grid{grid-template-columns:1fr}}
+  .session-code{font-family:var(--mono);font-size:46px;font-weight:800;letter-spacing:10px;color:var(--gold);text-align:center}
+  .groups-table{width:100%;border-collapse:collapse;font-size:14.5px}
+  .groups-table th{text-align:left;color:var(--dim);font-size:12px;letter-spacing:.6px;text-transform:uppercase;
+                   padding:8px 10px;border-bottom:1px solid var(--line)}
+  .groups-table td{padding:10px;border-bottom:1px solid var(--line)}
+  .groups-table .mono{font-size:15px}
+  .sem{display:inline-block;width:12px;height:12px;border-radius:50%}
+  .sem.g{background:var(--up)} .sem.y{background:var(--gold)} .sem.r{background:var(--down)} .sem.off{background:var(--faint)}
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:20px 0}
+  .pod{background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 0 0;width:150px;
+       display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px 8px;text-align:center}
+  .pod .medal{font-size:34px}
+  .pod .nm{font-weight:800;font-size:15px;margin:4px 0}
+  .pod .vl{font-family:var(--mono);color:var(--dim);font-size:13px}
+  .pod.p1{height:190px;border-color:var(--gold)} .pod.p2{height:150px} .pod.p3{height:120px}
+  /* --- panel de puntaje --- */
+  .score-hero{text-align:center;padding:16px 10px 20px}
+  .score-hero .num{font-family:var(--mono);font-size:66px;font-weight:800;line-height:1}
+  .score-hero .den{color:var(--faint);font-size:15px;margin-top:2px}
+  .score-hero .niv{font-size:19px;font-weight:800;letter-spacing:1px;margin-top:8px}
+  .sbar{margin-bottom:14px}
+  .sb-l{display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;margin-bottom:5px}
+  .sb-l b{font-family:var(--mono);font-size:15px}
+  .sb-t{height:10px;background:var(--bg2);border-radius:999px;overflow:hidden}
+  .sb-t i{display:block;height:100%;border-radius:999px;transition:width .5s ease}
+  .sb-h{color:var(--faint);font-size:12.5px;margin-top:5px;line-height:1.45}
+  .fb{display:flex;gap:11px;align-items:flex-start;background:var(--bg2);border:1px dashed var(--line);
+      border-radius:12px;padding:12px 14px;margin-bottom:9px;font-size:14px;line-height:1.55;color:var(--dim)}
+  .fb .ico{font-size:19px;line-height:1.2}
+  .pod .sc{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--gold)}
+  .coord-steps{display:flex;flex-direction:column;gap:10px}
+  .hint{color:var(--faint);font-size:13px;line-height:1.5}
+  h2.sec{font-size:16px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:18px 0 10px}
+</style>
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<div id="view-home">
+  <h1>LA BOLSA DE VALORES <span class="tick">📊</span></h1>
+  <p class="sub">Dinámica de educación financiera — Ahorrá, invertí y aprendé jugando.
+     Elegí tu rol para comenzar.</p>
+  <div class="role-grid">
+    <button class="role-card" onclick="location.hash='#coordinador'">
+      <div class="ico">🎛️</div><b>Coordinador</b>
+      <span>Creá la sesión, controlá las ruedas y mirá los portafolios de todos los grupos.</span>
+    </button>
+    <button class="role-card" onclick="location.hash='#grupo'">
+      <div class="ico">👨‍👩‍👧‍👦</div><b>Grupo / Familia</b>
+      <span>Armá tu portafolio con tu equipo y tratá de cumplir la meta de tu familia.</span>
+    </button>
+    <button class="role-card" onclick="location.hash='#monitor'">
+      <div class="ico">📈</div><b>Monitor de Mercado</b>
+      <span>Pantalla para el proyector: precios en vivo, como en una bolsa de verdad.</span>
+    </button>
+  </div>
+  <p class="conn-note" id="home-conn"></p>
+</div>
+
+<!-- ============ MONITOR ============ -->
+<div id="view-monitor" class="hidden">
+  <div class="mon-head">
+    <h1>BOLSA DE VALORES <span class="tick">— MONTEVIDEO</span></h1>
+    <div class="mon-round" id="mon-round">RUEDA 1</div>
+    <div class="mon-clock mono" id="mon-clock">--:--:--</div>
+  </div>
+  <div class="mon-grid" id="mon-grid"></div>
+  <div class="mon-tape"><div class="tape-inner" id="mon-tape"></div></div>
+  <div class="mon-controls">
+    <button class="btn" onclick="Monitor.setRound(1)">R1</button>
+    <button class="btn" onclick="Monitor.setRound(2)">R2</button>
+    <button class="btn" onclick="Monitor.setRound(3)">R3</button>
+    <button class="btn" onclick="location.hash=''">⌂</button>
+  </div>
+</div>
+
+<!-- bell overlay -->
+<div id="bell-overlay" class="hidden">
+  <div class="bell">🔔</div>
+  <h2 id="bell-title">¡SUENA LA CAMPANA!</h2>
+  <p id="bell-sub">Comienza la Rueda 2 — los precios cambiaron</p>
+</div>
+
+<!-- ============ GRUPO ============ -->
+<div id="view-grupo" class="hidden"></div>
+
+<!-- ============ COORDINADOR ============ -->
+<div id="view-coord" class="hidden"></div>
+
+<script>
+/* ================================================================
+   GAME_DATA — editá acá los activos, precios y casos del juego
+   ================================================================ */
+const GAME_DATA = {
+  budget: 20000,               // USD por familia
+  yearsPerRound: 1,            // cada rueda ≈ 1 año
+  lrmRate: 0.09,               // tasa anual LRM (en $, se asume TC estable en el juego)
+  rounds: 3,
+  assets: [
+    {
+      id:'buy33', name:'Bono Global Uruguay 2033', ticker:'URUGUA 5.1%', type:'bond', typeLabel:'BONO',
+      coupon:0.051, prices:[98.5, 99.0, 100.0],
+      history:[91,94,88,90,95,97,96,97.5,98,98.5],
+      desc:'Bono en dólares emitido y garantizado por el Estado uruguayo. Paga 5,1% de interés por año.'
+    },
+    {
+      id:'tn2y', name:'Treasury Note USA 2 años', ticker:'TN 2Y 4%', type:'bond', typeLabel:'BONO',
+      coupon:0.04, prices:[99.8, 100.0, 100.2],
+      history:[99,99.5,100.2,100.4,100.1,99.7,99.6,99.9,99.7,99.8],
+      desc:'Bono del Tesoro de Estados Unidos. Se considera el activo "libre de riesgo" del mundo. Paga 4% anual.'
+    },
+    {
+      id:'fund', name:'Fondo Indexado Global', ticker:'WORLD FUND', type:'fund', typeLabel:'FONDO',
+      coupon:0, prices:[100, 92, 112],
+      history:[62,68,66,74,80,78,88,92,95,100],
+      desc:'Fondo que invierte en miles de empresas y bonos de todo el mundo a la vez. Diversificación automática.'
+    },
+    {
+      id:'meli', name:'MercadoLibre', ticker:'MELI', type:'stock', typeLabel:'ACCIÓN',
+      coupon:0, prices:[60, 42, 78],
+      history:[18,25,22,38,55,48,42,50,57,60],
+      desc:'El gigante latinoamericano del comercio electrónico y los pagos digitales (Mercado Pago).'
+    },
+    {
+      id:'nvda', name:'NVIDIA', ticker:'NVDA', type:'stock', typeLabel:'ACCIÓN',
+      coupon:0, prices:[45, 25, 70],
+      history:[8,12,10,16,26,22,30,38,42,45],
+      desc:'Diseña los chips que hacen posible los videojuegos y la inteligencia artificial.'
+    },
+    {
+      id:'nflx', name:'Netflix', ticker:'NFLX', type:'stock', typeLabel:'ACCIÓN',
+      coupon:0, prices:[50, 30, 62],
+      history:[15,22,28,26,35,42,40,46,52,50],
+      desc:'La plataforma de series y películas por streaming más grande del mundo.'
+    }
+  ],
+  cases: [
+    {
+      id:'jubilacion', icon:'🧓', title:'La jubilación del abuelo',
+      story:'Un integrante de la familia está por jubilarse. Entre la jubilación que va a cobrar y los gastos que planificó, le van a faltar unos USD 1.200 por año para vivir como quiere. Tiene USD 20.000 ahorrados y decidió invertirlos en la Bolsa.',
+      goalText:'Ganar al menos USD 3.600 en 3 años (6% anual) sin arriesgar demasiado el capital.',
+      metaRet:0.18, protegeCapital:true,
+      perfil:{min:0.10, max:0.40, label:'conservador',
+              txt:'Como el abuelo va a necesitar la plata pronto, entre el 10% y el 40% del portafolio debería estar en activos de riesgo (acciones y fondo). El resto, en bonos y Letras.'}
+    },
+    {
+      id:'vivienda', icon:'🏠', title:'La primera vivienda',
+      story:'Una pareja joven quiere comprar su primer apartamento. El banco les presta el 80% pero les exige tener ahorrado el 20%. Tienen USD 20.000 y necesitan llegar a USD 23.600 en 3 años para completar la entrega.',
+      goalText:'Ganar al menos USD 3.600 en 3 años (6% anual) para llegar a la entrega del apartamento.',
+      metaRet:0.18, protegeCapital:true,
+      perfil:{min:0.35, max:0.70, label:'equilibrado',
+              txt:'Tienen una meta exigente pero un plazo definido: entre el 35% y el 70% en activos de riesgo (acciones y fondo), y el resto en bonos y Letras.'}
+    },
+    {
+      id:'herencia', icon:'💼', title:'La herencia',
+      story:'La familia recibió USD 20.000 por una herencia. No quieren perder nada de ese dinero, pero les gustaría hacerlo crecer lo más posible invirtiendo en la Bolsa.',
+      goalText:'Ganar al menos USD 3.000 en 3 años sin terminar nunca por debajo de los USD 20.000 iniciales.',
+      metaRet:0.15, protegeCapital:true,
+      perfil:{min:0.50, max:0.90, label:'agresivo',
+              txt:'No tienen una fecha límite, así que pueden tolerar más riesgo: entre el 50% y el 90% en acciones y fondo. Pero ojo, prometieron no perder el capital.'}
+    }
+  ]
+};
+
+/* Libro de órdenes estático por activo y ronda (estilo pantalla de bolsa).
+   Se genera de forma determinística alrededor del precio de la ronda. */
+function orderBook(asset, round){
+  const p = asset.prices[round-1];
+  const step = Math.max(p*0.008, 0.1);
+  const seed = (asset.id.charCodeAt(0)+asset.id.charCodeAt(1))*round;
+  const q = i => Math.round((((seed*31+i*17) % 90)+10)) * (asset.type==='stock'?1000:asset.type==='fund'?5000:100);
+  const fmt = v => v>=100 ? v.toFixed(1) : v.toFixed(2);
+  const bids=[], asks=[];
+  for(let i=1;i<=3;i++){
+    bids.push({q:q(i), p:fmt(p - step*i)});
+    asks.push({q:q(i+3), p:fmt(p + step*i)});
+  }
+  return {bids, asks};
+}
+
+/* ================================================================
+   ENGINE — cálculos del juego
+   ================================================================ */
+const Engine = {
+  assetById(id){ return GAME_DATA.assets.find(a=>a.id===id); },
+  price(id, round){ return this.assetById(id).prices[round-1]; },
+
+  newPortfolio(){
+    return { holdings:{}, cash:GAME_DATA.budget, lrm:0, lrmInterest:0, coupons:0,
+             cost:{}, realizedLoss:0, snaps:[] };
+  },
+
+  /* valor total del portafolio a precios de la ronda dada */
+  value(pf, round){
+    let v = pf.cash + pf.lrm;
+    for(const [id,qty] of Object.entries(pf.holdings)){
+      v += qty * this.price(id, round);
+    }
+    return v;
+  },
+
+  /* Pasaje de ronda: acredita cupones de bonos e intereses de LRM como cash */
+  accrue(pf){
+    let coupons = 0;
+    for(const [id,qty] of Object.entries(pf.holdings)){
+      const a = this.assetById(id);
+      if(a.coupon) coupons += qty * 100 * a.coupon; // cupón sobre valor nominal 100
+    }
+    let lrmInt = 0;
+    if(pf.lrm > 0){
+      lrmInt = pf.lrm * GAME_DATA.lrmRate;
+      pf.cash += pf.lrm + lrmInt;   // la LRM vence: capital + interés vuelven a cash
+      pf.lrm = 0;
+    }
+    pf.cash += coupons;
+    pf.coupons += coupons;
+    pf.lrmInterest += lrmInt;
+    return {coupons, lrmInt};
+  },
+
+  /* aplica una orden {id, qty} positiva=compra, negativa=venta; a precios de round */
+  trade(pf, id, qty, round){
+    const px = this.price(id, round);
+    const cost = qty * px;
+    const owned = pf.holdings[id]||0;
+    if(qty > 0 && cost > pf.cash + 1e-9) return {ok:false, err:'No te alcanza el efectivo.'};
+    if(qty < 0 && -qty > owned) return {ok:false, err:'No tenés esa cantidad para vender.'};
+    if(!pf.cost) pf.cost = {};
+    if(qty > 0){
+      pf.cost[id] = (pf.cost[id]||0) + cost;              // acumula lo pagado
+    } else if(qty < 0 && owned > 0){
+      const avg = (pf.cost[id]||0) / owned;               // costo promedio por unidad
+      const pnl = (-qty) * (px - avg);                    // resultado realizado
+      if(pnl < 0) pf.realizedLoss = (pf.realizedLoss||0) + (-pnl);
+      pf.cost[id] = (pf.cost[id]||0) + qty * avg;
+      if(pf.cost[id] < 0.01) pf.cost[id] = 0;
+    }
+    pf.holdings[id] = owned + qty;
+    if(pf.holdings[id]===0){ delete pf.holdings[id]; delete pf.cost[id]; }
+    pf.cash -= cost;
+    return {ok:true};
+  },
+
+  placeLRM(pf, amount){
+    amount = Math.min(amount, pf.cash);
+    if(amount<=0) return;
+    pf.cash -= amount;
+    pf.lrm += amount;
+  },
+
+  /* Código de resultado para modo offline: valor final en base36 + checksum */
+  /* Empaqueta valor + puntaje + familia en un solo número, con verificador.
+     n = valor*10000 + puntaje*10 + índice de familia  */
+  resultCode(finalValue, score, caseId){
+    const v = Math.round(finalValue);
+    const sc = Math.max(0, Math.min(999, Math.round(score||0)));
+    const ci = Math.max(0, GAME_DATA.cases.findIndex(c=>c.id===caseId));
+    const n = v*10000 + sc*10 + ci;
+    return n.toString(36).toUpperCase() + '-' + (n % 23).toString(36).toUpperCase();
+  },
+  decodeResult(code){
+    const m = (code||'').trim().toUpperCase().match(/^([0-9A-Z]+)-([0-9A-Z])$/);
+    if(!m) return null;
+    const n = parseInt(m[1], 36);
+    if(isNaN(n) || n < 0) return null;
+    if((n % 23).toString(36).toUpperCase() !== m[2]) return null;
+    const ci = n % 10;
+    const score = Math.floor(n/10) % 1000;
+    const value = Math.floor(n/10000);
+    const c = GAME_DATA.cases[ci];
+    return {value, score, caseId: c ? c.id : null};
+  },
+
+  fmt(n, dec=0){
+    return n.toLocaleString('es-UY', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  },
+  fmtUSD(n, dec=0){ return 'USD ' + this.fmt(n, dec); },
+  pct(n, dec=1){ return (n>0?'+':'') + (n*100).toFixed(dec).replace('.',',') + '%'; }
+};
+
+/* ================================================================
+   SCORE — puntaje de la dinámica (sobre 100, + hasta 5 de bonus)
+
+   40  Meta cumplida       — contra la meta de la propia familia
+   30  Diversificación     — promedio de las ruedas, no sólo el final
+   20  Perfil de riesgo    — coherencia con el mandato de la familia
+   10  Disciplina          — no vender con pérdida, no dejar plata ociosa
+   +5  Bonus por superar la meta (techo bajo a propósito)
+   ================================================================ */
+const SCORE_W = { meta:40, div:30, perfil:20, disc:10, bonus:5 };
+
+/* El fondo indexado ya está diversificado por dentro: cuenta como 3 activos.
+   Es la forma más simple de que se entienda qué compraron. */
+const FUND_EQUIV = 3;
+const DIV_TARGET = 4;      // 4 posiciones efectivas = puntaje completo
+const CASH_TOL   = 0.15;   // hasta 15% de efectivo ocioso no se penaliza
+const LOSS_TOL   = 0.05;   // pérdidas realizadas por 5% del capital = 0 puntos
+
+const Score = {
+  clamp(x, a=0, b=1){ return Math.max(a, Math.min(b, x)); },
+
+  /* Foto de la composición al cerrar una rueda */
+  snapshot(pf, round){
+    const parts = [];
+    let risk = 0, total = 0;
+    for(const [id,q] of Object.entries(pf.holdings)){
+      const a = Engine.assetById(id);
+      const v = q * Engine.price(id, round);
+      if(v <= 0) continue;
+      total += v;
+      if(a.type === 'stock' || a.type === 'fund') risk += v;
+      // el fondo se abre en varias posiciones para premiar su diversificación interna
+      const n = (a.type === 'fund') ? FUND_EQUIV : 1;
+      for(let i=0;i<n;i++) parts.push(v/n);
+    }
+    if(pf.lrm > 0){ parts.push(pf.lrm); total += pf.lrm; }
+    const cash = Math.max(0, pf.cash);
+    if(cash > 0){ parts.push(cash); total += cash; }
+    if(total <= 0) return {round, neff:1, riskShare:0, cashShare:1};
+    let hhi = 0;
+    for(const v of parts) hhi += Math.pow(v/total, 2);
+    return {
+      round,
+      neff: 1/hhi,
+      riskShare: risk/total,
+      cashShare: cash/total
+    };
+  },
+
+  record(pf, round){
+    if(!pf.snaps) pf.snaps = [];
+    pf.snaps = pf.snaps.filter(s => s.round !== round);
+    pf.snaps.push(this.snapshot(pf, round));
+    pf.snaps.sort((a,b)=>a.round-b.round);
+  },
+
+  /* Puntaje completo. round = rueda en la que se valúa (3 al cierre). */
+  compute(pf, caseObj, round){
+    const B = GAME_DATA.budget;
+    const value = Engine.value(pf, round);
+    const ret = (value - B) / B;
+    const snaps = (pf.snaps && pf.snaps.length) ? pf.snaps : [this.snapshot(pf, round)];
+
+    /* --- 40 · META --- */
+    const metaRet = caseObj ? caseObj.metaRet : 0.18;
+    let metaFrac = this.clamp(ret / metaRet);
+    const rompioCapital = caseObj && caseObj.protegeCapital && value < B;
+    if(rompioCapital) metaFrac = 0;
+    const meta = SCORE_W.meta * metaFrac;
+
+    /* --- 30 · DIVERSIFICACIÓN --- */
+    const divFracs = snaps.map(s => this.clamp((s.neff - 1) / (DIV_TARGET - 1)));
+    const divFrac = divFracs.reduce((a,b)=>a+b, 0) / divFracs.length;
+    const div = SCORE_W.div * divFrac;
+
+    /* --- 20 · PERFIL DE RIESGO --- */
+    const band = caseObj ? caseObj.perfil : {min:0.30, max:0.70};
+    const perfilFracs = snaps.map(s => {
+      const r = s.riskShare;
+      if(r >= band.min && r <= band.max) return 1;
+      const d = (r < band.min) ? (band.min - r) : (r - band.max);
+      return this.clamp(1 - d/0.30);
+    });
+    const perfilFrac = perfilFracs.reduce((a,b)=>a+b, 0) / perfilFracs.length;
+    const perfil = SCORE_W.perfil * perfilFrac;
+
+    /* --- 10 · DISCIPLINA (6 no vender con pérdida + 4 no dejar plata quieta) --- */
+    const loss = pf.realizedLoss || 0;
+    const noPanicFrac = this.clamp(1 - loss / (LOSS_TOL * B));
+    const avgCash = snaps.reduce((a,s)=>a+s.cashShare, 0) / snaps.length;
+    const noIdleFrac = this.clamp(1 - avgCash / CASH_TOL);
+    const disc = 6 * noPanicFrac + 4 * noIdleFrac;
+
+    /* --- +5 · BONUS por superar la meta --- */
+    const bonus = SCORE_W.bonus * this.clamp((ret - metaRet) / metaRet);
+
+    const total = meta + div + perfil + disc + bonus;
+    return {
+      value, ret, total,
+      meta, div, perfil, disc, bonus,
+      metaFrac, divFrac, perfilFrac,
+      neff: snaps.reduce((a,s)=>a+s.neff,0)/snaps.length,
+      riskShare: snaps[snaps.length-1].riskShare,
+      avgCash, loss, rompioCapital,
+      band
+    };
+  },
+
+  /* Frases para el cierre didáctico, derivadas de los números reales */
+  feedback(sc, caseObj){
+    const f = [];
+    if(sc.rompioCapital)
+      f.push({ico:'⚠️', txt:'Terminaron por debajo de los USD 20.000 iniciales. La familia se había comprometido a no perder el capital, así que el puntaje de la meta queda en cero.'});
+    else if(sc.metaFrac >= 1)
+      f.push({ico:'🎯', txt:'Cumplieron la meta de su familia. Ese es el objetivo real de invertir: llegar a lo que uno necesita, no ganarle a los demás.'});
+    else
+      f.push({ico:'🎯', txt:'Se quedaron a mitad de camino de la meta. No es un fracaso: en la vida real se ajusta el plazo o el aporte mensual.'});
+
+    if(sc.divFrac >= 0.9)
+      f.push({ico:'🧺', txt:'Repartieron bien el riesgo: tuvieron el equivalente a ' + sc.neff.toFixed(1).replace('.',',') + ' posiciones distintas. Ningún tropiezo individual los hundía.'});
+    else if(sc.divFrac >= 0.4)
+      f.push({ico:'🧺', txt:'Diversificaron a medias (' + sc.neff.toFixed(1).replace('.',',') + ' posiciones efectivas). Con dos o tres activos más el resultado dependía menos de la suerte.'});
+    else
+      f.push({ico:'🥚', txt:'Pusieron casi todos los huevos en la misma canasta (' + sc.neff.toFixed(1).replace('.',',') + ' posiciones efectivas). Esta vez pudo salir bien, pero es una apuesta, no una inversión.'});
+
+    const b = sc.band;
+    if(sc.perfilFrac >= 0.9)
+      f.push({ico:'⚖️', txt:'El nivel de riesgo fue el adecuado para esta familia.'});
+    else if(sc.riskShare > b.max)
+      f.push({ico:'🔥', txt:'Asumieron más riesgo del que esta familia podía tolerar (' + Math.round(sc.riskShare*100) + '% en acciones y fondo, el máximo razonable era ' + Math.round(b.max*100) + '%).'});
+    else
+      f.push({ico:'🐢', txt:'Se quedaron demasiado defensivos para esta familia (' + Math.round(sc.riskShare*100) + '% en acciones y fondo, hacía falta al menos ' + Math.round(b.min*100) + '%).'});
+
+    if(sc.loss > 0)
+      f.push({ico:'😰', txt:'Vendieron con pérdida por ' + Engine.fmtUSD(sc.loss) + '. Vender cuando todo cae convierte una caída pasajera en una pérdida definitiva.'});
+    if(sc.avgCash > CASH_TOL)
+      f.push({ico:'💤', txt:'Dejaron en promedio ' + Math.round(sc.avgCash*100) + '% en efectivo quieto. La plata en el bolsillo no rinde: para eso están las Letras.'});
+    return f;
+  },
+
+  nivel(total){
+    if(total >= 85) return {t:'Excelente', c:'var(--up)'};
+    if(total >= 65) return {t:'Muy bien',  c:'var(--up)'};
+    if(total >= 45) return {t:'Bien',      c:'var(--gold)'};
+    return {t:'A repensar', c:'var(--down)'};
+  }
+};
+
+/* ================================================================
+   SYNC — sincronización de la sesión
+   Modo ONLINE:  pegá la configuración de tu proyecto Firebase acá
+                 (ver README.md). Si es null o no hay internet, la app
+                 usa BroadcastChannel (ventanas de la misma PC) y todo
+                 lo demás funciona en modo offline.
+   ================================================================ */
+const FIREBASE_CONFIG = null;
+/* Ejemplo:
+const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "mi-proyecto.firebaseapp.com",
+  databaseURL: "https://mi-proyecto-default-rtdb.firebaseio.com",
+  projectId: "mi-proyecto"
+};
+*/
+
+const Sync = {
+  mode:'off', code:null, role:null,
+  _cbState:null, _cbGroup:null, _bc:null, _db:null,
+
+  async connect(code, role, {onState, onGroup}={}){
+    this.code = (code||'BVM1').toUpperCase();
+    this.role = role;
+    this._cbState = onState; this._cbGroup = onGroup;
+    if(FIREBASE_CONFIG && navigator.onLine){
+      try{ await this._initFirebase(); this.mode='online'; }
+      catch(e){ console.warn('Firebase no disponible, uso modo local', e); this._initLocal(); }
+    } else {
+      this._initLocal();
+    }
+    this._updatePills();
+  },
+
+  _initLocal(){
+    if(typeof BroadcastChannel === 'undefined'){ this.mode='off'; return; }
+    if(this._bc) this._bc.close();
+    this.mode='local';
+    this._bc = new BroadcastChannel('bvm-'+this.code);
+    this._bc.onmessage = (ev)=>{
+      const m = ev.data||{};
+      if(m.type==='state' && this._cbState) this._cbState(m.state);
+      if(m.type==='group' && this._cbGroup) this._cbGroup(m.group);
+      if(m.type==='hello'){
+        // el coordinador re-publica el estado para los que llegan tarde
+        if(this.role==='coord' && Coord.session) this.sendState(Coord.session.state);
+        if(this.role==='group' && Grupo.st && Grupo.st.joined) this.sendGroup(Grupo.publicGroup());
+      }
+    };
+    this._bc.postMessage({type:'hello'});
+  },
+
+  async _initFirebase(){
+    if(!window.firebase){
+      await this._loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+      await this._loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js');
+    }
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    this._db = firebase.database();
+    const base = 'sesiones/'+this.code;
+    this._db.ref(base+'/state').on('value', s=>{
+      const v = s.val(); if(v && this._cbState) this._cbState(v);
+    });
+    this._db.ref(base+'/groups').on('child_added', s=>{ if(this._cbGroup) this._cbGroup(s.val()); });
+    this._db.ref(base+'/groups').on('child_changed', s=>{ if(this._cbGroup) this._cbGroup(s.val()); });
+  },
+
+  _loadScript(src){
+    return new Promise((res,rej)=>{
+      const t = setTimeout(()=>rej(new Error('timeout')), 7000);
+      const s = document.createElement('script');
+      s.src = src; s.onload = ()=>{clearTimeout(t);res();}; s.onerror = ()=>{clearTimeout(t);rej(new Error('load'));};
+      document.head.appendChild(s);
+    });
+  },
+
+  sendState(state){
+    if(this.mode==='online') this._db.ref('sesiones/'+this.code+'/state').set(state);
+    else if(this.mode==='local' && this._bc) this._bc.postMessage({type:'state', state});
+  },
+  sendGroup(group){
+    if(this.mode==='online') this._db.ref('sesiones/'+this.code+'/groups/'+group.id).set(group);
+    else if(this.mode==='local' && this._bc) this._bc.postMessage({type:'group', group});
+  },
+
+  label(){
+    return this.mode==='online' ? 'En línea (sesión '+this.code+')'
+         : this.mode==='local'  ? 'Local — misma PC (sesión '+this.code+')'
+         : 'Sin conexión — modo autónomo';
+  },
+  _updatePills(){
+    document.querySelectorAll('.conn-pill').forEach(el=>{
+      el.innerHTML = '<span class="dot '+(this.mode==='online'?'on':this.mode==='local'?'local':'')+'"></span> '+this.label();
+    });
+  }
+};
+
+/* ================================================================
+   ROUTER
+   ================================================================ */
+const Views = ['home','monitor','grupo','coord'];
+function show(view){
+  document.getElementById('view-home').classList.toggle('hidden', view!=='home');
+  document.getElementById('view-monitor').classList.toggle('hidden', view!=='monitor');
+  document.getElementById('view-grupo').classList.toggle('hidden', view!=='grupo');
+  document.getElementById('view-coord').classList.toggle('hidden', view!=='coord');
+}
+function route(){
+  const h = (location.hash||'').replace('#','');
+  if(h.startsWith('coordinador')){ show('coord'); Coord.mount(); }
+  else if(h.startsWith('grupo')){ show('grupo'); Grupo.mount(); }
+  else if(h.startsWith('monitor')){ show('monitor'); Monitor.mount(); }
+  else {
+    show('home');
+    const n = document.getElementById('home-conn');
+    n.textContent = FIREBASE_CONFIG ? 'Modo online configurado — se usará si hay internet.'
+      : 'Sin configuración online: funciona igual, en modo local/offline (ver README).';
+  }
+}
+window.addEventListener('hashchange', route);
+
+/* ================================================================
+   BELL — campana de cambio de rueda
+   ================================================================ */
+function ringBell(title, sub, ms=3800){
+  const o = document.getElementById('bell-overlay');
+  document.getElementById('bell-title').textContent = title;
+  document.getElementById('bell-sub').textContent = sub;
+  o.classList.remove('hidden');
+  clearTimeout(ringBell._t);
+  ringBell._t = setTimeout(()=>o.classList.add('hidden'), ms);
+}
+const ROUND_SUBS = {
+  1:'Se abre el mercado — armen su portafolio',
+  2:'Los precios cambiaron — pueden comprar y vender',
+  3:'Cierre del mercado — resultados finales'
+};
+
+/* ================================================================
+   MONITOR — pantalla de mercado para el proyector
+   ================================================================ */
+const Monitor = {
+  round:1, mounted:false,
+
+  mount(){
+    if(!this.mounted){
+      this.mounted = true;
+      setInterval(()=>{
+        const d = new Date();
+        document.getElementById('mon-clock').textContent =
+          d.toLocaleTimeString('es-UY',{hour12:false});
+      }, 1000);
+      const params = new URLSearchParams((location.hash.split('?')[1]||''));
+      Sync.connect(params.get('sala')||localStorage.getItem('bvm_code')||'BVM1', 'monitor', {
+        onState: st=>{ if(st && st.round && st.round!==this.round && st.phase!=='lobby') this.setRound(st.round, true); }
+      });
+    }
+    this.render();
+  },
+
+  setRound(r, bell){
+    if(r===this.round){ this.render(); return; }
+    this.round = r;
+    if(bell!==false) ringBell('¡SUENA LA CAMPANA!  RUEDA '+r, ROUND_SUBS[r]||'');
+    this.render(true);
+  },
+
+  render(flash){
+    document.getElementById('mon-round').textContent = 'RUEDA '+this.round+' DE '+GAME_DATA.rounds;
+    const grid = document.getElementById('mon-grid');
+    grid.innerHTML = GAME_DATA.assets.map(a=>{
+      const p = a.prices[this.round-1];
+      const prev = this.round>1 ? a.prices[this.round-2] : a.history[a.history.length-1];
+      const chg = (p-prev)/prev;
+      const cls = chg>0.0005?'up':chg<-0.0005?'down':'flat';
+      const book = orderBook(a, this.round);
+      const series = a.history.concat(a.prices.slice(0, this.round));
+      return `
+      <div class="mcard">
+        <div class="head">
+          <span class="tag tag-${a.type==='bond'?'bond':a.type==='fund'?'fund':'stock'}">${a.typeLabel}</span>
+          <span class="name">${a.name}</span>
+          <span class="tk">${a.ticker}</span>
+        </div>
+        <div class="pricerow">
+          <span class="price mono ${flash?(cls==='up'?'flash-up':cls==='down'?'flash-down':''):''}">${p.toFixed(p<100?2:1).replace('.',',')}</span>
+          <span class="chg ${cls}">${Engine.pct(chg)}</span>
+        </div>
+        <div class="book">
+          <table class="bid"><caption>COMPRA</caption>
+            ${book.bids.map(b=>`<tr><td class="q">${Engine.fmt(b.q)}</td><td class="p">${b.p}</td></tr>`).join('')}
+          </table>
+          <table class="ask"><caption>VENTA</caption>
+            ${book.asks.map(b=>`<tr><td class="p">${b.p}</td><td class="q">${Engine.fmt(b.q)}</td></tr>`).join('')}
+          </table>
+        </div>
+        ${sparkSVG(series)}
+      </div>`;
+    }).join('');
+
+    const tape = GAME_DATA.assets.map(a=>{
+      const p = a.prices[this.round-1];
+      const prev = this.round>1 ? a.prices[this.round-2] : a.history[a.history.length-1];
+      const chg = (p-prev)/prev;
+      const cls = chg>0.0005?'up':chg<-0.0005?'down':'flat';
+      const arrow = chg>0.0005?'▲':chg<-0.0005?'▼':'▬';
+      return `<span>${a.ticker} <b class="${cls}">${p.toFixed(2).replace('.',',')} ${arrow} ${Engine.pct(chg)}</b></span>`;
+    }).join('');
+    document.getElementById('mon-tape').innerHTML = tape + tape + tape + tape;
+  }
+};
+
+function sparkSVG(series){
+  const min = Math.min(...series), max = Math.max(...series);
+  const range = (max-min)||1;
+  const W=100, H=40, pad=3;
+  const pts = series.map((v,i)=>{
+    const x = pad + i*(W-2*pad)/(series.length-1);
+    const y = H-pad - (v-min)*(H-2*pad)/range;
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  const last = pts[pts.length-1].split(',');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(77,163,255,.35)"/><stop offset="100%" stop-color="rgba(77,163,255,0)"/>
+    </linearGradient></defs>
+    <polygon class="area" points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}"/>
+    <polyline points="${pts.join(' ')}"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="2.2" fill="#4da3ff"/>
+  </svg>`;
+}
+
+/* ================================================================
+   GRUPO — vista para las tablets/celulares de cada familia
+   ================================================================ */
+const Grupo = {
+  st:null, mounted:false,
+
+  defaults(){
+    return {
+      id: 'g'+Math.random().toString(36).slice(2,8),
+      joined:false, sessionCode:'', name:'', caseId:null,
+      autonomous:false, round:1, step:'join',
+      pf: Engine.newPortfolio(),
+      confirmed:{}, draft:{}, lrmAsked:{}, lastAccrual:null
+    };
+  },
+
+  mount(){
+    if(!this.st){
+      const saved = localStorage.getItem('bvm_grupo');
+      this.st = saved ? JSON.parse(saved) : this.defaults();
+    }
+    if(this.st.joined && !this.st.autonomous && Sync.mode==='off'){
+      Sync.connect(this.st.sessionCode, 'group', {onState: s=>this.onState(s)});
+    }
+    this.render();
+  },
+
+  save(){ localStorage.setItem('bvm_grupo', JSON.stringify(this.st)); },
+
+  reset(){
+    if(!confirm('¿Reiniciar el juego de este grupo? Se pierde el portafolio actual.')) return;
+    localStorage.removeItem('bvm_grupo');
+    this.st = this.defaults();
+    this.render();
+  },
+
+  /* ---------- sync ---------- */
+  join(autonomous){
+    const name = document.getElementById('g-name').value.trim();
+    if(!name){ alert('Escribí el nombre de tu familia.'); return; }
+    this.st.name = name;
+    this.st.autonomous = autonomous;
+    this.st.joined = true;
+    if(!autonomous){
+      const code = (document.getElementById('g-code').value.trim()||'BVM1').toUpperCase();
+      this.st.sessionCode = code;
+      localStorage.setItem('bvm_code', code);
+      Sync.connect(code, 'group', {onState: s=>this.onState(s)});
+    }
+    this.st.step = 'case';
+    this.save(); this.render();
+  },
+
+  onState(state){
+    if(!this.st || !this.st.joined) return;
+    this.coordState = state;
+    if(!state || state.phase==='lobby'){ this.render(); return; }
+    if(state.round > this.st.round){
+      this.advanceTo(state.round);
+    } else if(state.round === this.st.round && this.st.step==='wait' && !this.st.confirmed[this.st.round] && this.st.caseId){
+      this.st.step = this.st.round===3 ? 'final' : 'trade';
+      this.save(); this.render();
+    } else {
+      this.render();
+    }
+  },
+
+  publicGroup(){
+    const st = this.st;
+    const value = Engine.value(st.pf, st.round);
+    const invested = 1 - (st.pf.cash / Math.max(value,1));
+    const sc = Score.compute(st.pf, this.caseOf(), st.round);
+    return {
+      id: st.id, name: st.name, caseId: st.caseId, round: st.round,
+      value: Math.round(value), invested: Math.round(invested*100),
+      score: Math.round(sc.total*10)/10, neff: Math.round(sc.neff*10)/10,
+      parts: {meta:Math.round(sc.meta), div:Math.round(sc.div),
+              perfil:Math.round(sc.perfil), disc:Math.round(sc.disc), bonus:Math.round(sc.bonus)},
+      done: !!st.confirmed[st.round], ts: Date.now()
+    };
+  },
+  broadcast(){ if(!this.st.autonomous && Sync.mode!=='off') Sync.sendGroup(this.publicGroup()); },
+
+  /* ---------- ruedas ---------- */
+  advanceTo(r){
+    const st = this.st;
+    while(st.round < r){
+      st.lastAccrual = Engine.accrue(st.pf);
+      st.round++;
+    }
+    st.draft = {};
+    st.step = (st.round>=3) ? 'final' : 'results';
+    ringBell('¡SUENA LA CAMPANA!  RUEDA '+st.round, ROUND_SUBS[st.round]||'');
+    this.save(); this.broadcast(); this.render();
+  },
+
+  pickCase(id){
+    this.st.caseId = id;
+    // en modo sincronizado espera a que el coordinador abra el mercado
+    const open = this.st.autonomous || (this.coordState && this.coordState.phase==='play');
+    this.st.step = open ? 'trade' : 'wait';
+    this.save(); this.broadcast(); this.render();
+  },
+
+  /* ---------- órdenes ---------- */
+  setDelta(id, v){
+    const st = this.st;
+    let d = parseInt(v,10); if(isNaN(d)) d = 0;
+    const owned = st.pf.holdings[id]||0;
+    if(d < -owned) d = -owned;                       // no vender lo que no se tiene
+    st.draft[id] = d;
+    if(this.draftCash() < 0){                        // no gastar más del efectivo
+      const px = Engine.price(id, st.round);
+      d -= Math.ceil((-this.draftCash())/px);
+      if(d < -owned) d = -owned;
+      st.draft[id] = d;
+    }
+    this.save(); this.renderTradeNumbers();
+  },
+  bump(id, dir){ this.setDelta(id, (this.st.draft[id]||0)+dir); },
+
+  draftCost(){
+    let c = 0;
+    for(const [id,d] of Object.entries(this.st.draft)) c += d * Engine.price(id, this.st.round);
+    return c;
+  },
+  draftCash(){ return this.st.pf.cash - this.draftCost(); },
+
+  confirmTrades(){
+    const st = this.st;
+    for(const [id,d] of Object.entries(st.draft)){
+      if(d) Engine.trade(st.pf, id, d, st.round);
+    }
+    st.draft = {};
+    st.confirmed[st.round] = true;
+    st.step = 'lrm';
+    this.save(); this.broadcast(); this.render();
+  },
+
+  answerLRM(yes){
+    const st = this.st;
+    if(yes) Engine.placeLRM(st.pf, st.pf.cash);
+    st.lrmAsked[st.round] = true;
+    Score.record(st.pf, st.round);   // foto de la composición: cuenta para el puntaje
+    st.step = 'wait';
+    this.save(); this.broadcast(); this.render();
+  },
+
+  /* ---------- render ---------- */
+  caseOf(){ return GAME_DATA.cases.find(c=>c.id===this.st.caseId); },
+
+  goalStatus(value){
+    const c = this.caseOf(); if(!c) return null;
+    const target = GAME_DATA.budget * (1 + c.goalPct);
+    if(value >= target) return {cls:'goal-ok', txt: c.goalPct>0 ? '✔ Meta alcanzada' : '✔ Capital protegido'};
+    if(value >= GAME_DATA.budget) return {cls:'goal-mid', txt:'● En camino — todavía no llegan a la meta'};
+    return {cls:'goal-no', txt:'✘ Por debajo del capital inicial'};
+  },
+
+  topbar(){
+    const st = this.st;
+    return `<div class="topbar">
+      <span class="brand">BOLSA <span class="tick">📊</span> ${st.name?('· '+st.name):''}</span>
+      <span class="round-pill">Rueda <span class="n">${st.round}</span>/${GAME_DATA.rounds}</span>
+      <span class="conn-pill"></span>
+      <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="Grupo.reset()">Reiniciar</button>
+    </div>`;
+  },
+
+  render(){
+    const el = document.getElementById('view-grupo');
+    const st = this.st;
+    let body = '';
+    if(st.step==='join') body = this.rJoin();
+    else if(st.step==='case') body = this.rCase();
+    else if(st.step==='trade') body = this.rTrade();
+    else if(st.step==='lrm') body = this.rLRM();
+    else if(st.step==='wait') body = this.rWait();
+    else if(st.step==='results') body = this.rResults();
+    else if(st.step==='final') body = this.rFinal();
+    el.innerHTML = (st.step==='join' ? '' : this.topbar()) + body;
+    Sync._updatePills();
+    if(st.step==='trade') this.renderTradeNumbers();
+  },
+
+  rJoin(){
+    return `<div class="g-section" style="max-width:460px;margin:40px auto">
+      <h1 style="text-align:center;font-size:30px;margin-bottom:6px">👨‍👩‍👧‍👦 Tu familia</h1>
+      <p class="step-sub" style="text-align:center">Elijan un nombre y entren a la sesión que
+        creó el coordinador. Si no hay conexión, jueguen en modo autónomo.</p>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <input class="input" id="g-name" maxlength="18" placeholder="Nombre de la familia (ej: Los Rodríguez)">
+        <input class="input mono" id="g-code" maxlength="6" placeholder="Código de sala (ej: BVM1)"
+               style="text-transform:uppercase;letter-spacing:3px">
+        <button class="btn btn-primary btn-big" onclick="Grupo.join(false)">Entrar a la sesión</button>
+        <button class="btn btn-ghost" onclick="Grupo.join(true)">📴 Jugar sin conexión (modo autónomo)</button>
+      </div>
+    </div>`;
+  },
+
+  rCase(){
+    return `<div class="g-section">
+      <div class="step-title">Elijan su familia</div>
+      <p class="step-sub">Cada familia tiene una historia y una meta de ahorro distinta.
+        Su desafío: invertir USD ${Engine.fmt(GAME_DATA.budget)} en la Bolsa para cumplirla.</p>
+      ${GAME_DATA.cases.map(c=>`
+        <button class="card case-card" style="width:100%;text-align:left;margin-bottom:12px;cursor:pointer"
+                onclick="Grupo.pickCase('${c.id}')">
+          <h3>${c.icon} ${c.title}</h3>
+          <p>${c.story}</p>
+          <div class="meta">🎯 ${c.goalText}</div>
+          <div class="meta" style="margin-top:6px">⚖️ Perfil ${c.perfil.label}: entre
+            ${Math.round(c.perfil.min*100)}% y ${Math.round(c.perfil.max*100)}% en acciones y fondo.</div>
+        </button>`).join('')}
+      ${this.rReglas()}
+    </div>`;
+  },
+
+  /* Las reglas del puntaje, a la vista desde el principio */
+  rReglas(){
+    return `<div class="card" style="margin-top:6px">
+      <h3 style="font-size:15px;margin-bottom:10px">🏆 Cómo se gana esta competencia</h3>
+      <p class="sub" style="font-family:var(--sans);margin-bottom:10px">No gana quien más plata junta,
+        sino quien invierte <b>mejor</b>. El puntaje es sobre 100:</p>
+      <table style="width:100%;font-size:14px;border-collapse:collapse;line-height:1.5">
+        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">40</td>
+            <td><b>Meta cumplida</b> — llegar a la meta de tu familia. Pasarse casi no suma.</td></tr>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">30</td>
+            <td><b>Diversificación</b> — no poner todo en un solo activo. Se mide en las dos ruedas.</td></tr>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">20</td>
+            <td><b>Perfil de riesgo</b> — que el riesgo sea el que esa familia puede tolerar.</td></tr>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">10</td>
+            <td><b>Disciplina</b> — no vender con pérdida y no dejar plata quieta.</td></tr>
+      </table>
+      <p class="hint" style="margin-top:10px">El Fondo Indexado cuenta como 3 activos, porque adentro
+        ya está diversificado.</p>
+    </div>`;
+  },
+
+  rTrade(){
+    const st = this.st;
+    const c = this.caseOf();
+    const isR2 = st.round>1;
+    return `
+    <div class="meta-bar">
+      <div class="stat"><div class="lbl">Efectivo</div><div class="val mono" id="t-cash">—</div></div>
+      <div class="stat"><div class="lbl">Valor del portafolio</div><div class="val mono" id="t-value">—</div></div>
+      <div class="stat"><div class="lbl">Diversificación 🧺</div><div class="val mono" id="t-div">—</div></div>
+      <div class="stat"><div class="lbl">Meta 🎯</div><div class="val" style="font-size:13.5px;font-family:var(--sans)">${c?c.goalText:''}</div></div>
+    </div>
+    <div class="g-section">
+      <div class="step-title">${isR2?'Rueda '+st.round+' — pueden vender y comprar':'Rueda 1 — armen su portafolio'}</div>
+      <p class="step-sub">${isR2
+        ? 'Los precios cambiaron. Pueden vender activos (botón −) para recuperar efectivo y comprar otros (botón +).'
+        : 'Compren activos con sus USD '+Engine.fmt(GAME_DATA.budget)+'. Piensen en el riesgo de cada uno… y no pongan todos los huevos en la misma canasta.'}</p>
+      ${GAME_DATA.assets.map(a=>{
+        const px = Engine.price(a.id, st.round);
+        const owned = st.pf.holdings[a.id]||0;
+        const prev = st.round>1 ? Engine.price(a.id, st.round-1) : null;
+        const chg = prev ? (px-prev)/prev : null;
+        return `
+        <div class="asset-row" id="row-${a.id}">
+          <div class="r1">
+            <span class="tag tag-${a.type==='bond'?'bond':a.type==='fund'?'fund':'stock'}">${a.typeLabel}</span>
+            <span class="nm">${a.name}</span>
+            <span class="px mono">${px.toFixed(2).replace('.',',')}
+              ${chg!==null?`<span class="chg ${chg>0?'up':chg<0?'down':'flat'}" style="font-size:12.5px">${Engine.pct(chg)}</span>`:''}
+            </span>
+          </div>
+          <div class="r2">
+            ${owned?`<span class="own">Tienen: ${owned}</span>`:''}
+            <div class="qty-ctrl">
+              <button onclick="Grupo.bump('${a.id}',-1)" aria-label="menos">−</button>
+              <input inputmode="numeric" id="d-${a.id}" value="${st.draft[a.id]||0}"
+                     onchange="Grupo.setDelta('${a.id}', this.value)">
+              <button onclick="Grupo.bump('${a.id}',1)" aria-label="más">+</button>
+            </div>
+            <span class="sub" id="c-${a.id}"></span>
+          </div>
+          <details style="margin-top:8px"><summary style="color:var(--faint);font-size:12.5px;cursor:pointer">¿Qué es esto?</summary>
+            <p class="sub" style="font-family:var(--sans)">${a.desc}${a.coupon?` Paga ${(a.coupon*100).toFixed(1).replace('.',',')}% de interés por año (cupón).`:''}</p>
+          </details>
+        </div>`;
+      }).join('')}
+      <button class="btn btn-gold btn-big" style="width:100%;margin-top:8px" onclick="Grupo.confirmTrades()">
+        ✔ Confirmar órdenes
+      </button>
+    </div>
+    <div class="cashbar"><div class="inner">
+      <div><div class="c-lbl">EFECTIVO DISPONIBLE</div><div class="c-val mono" id="cb-cash">—</div></div>
+      <div style="margin-left:auto;text-align:right"><div class="c-lbl">COSTO DE LAS ÓRDENES</div><div class="c-val mono" id="cb-cost">—</div></div>
+    </div></div>`;
+  },
+
+  renderTradeNumbers(){
+    const st = this.st;
+    const cash = this.draftCash();
+    const cost = this.draftCost();
+    const set = (id, txt)=>{ const e=document.getElementById(id); if(e) e.textContent = txt; };
+    set('t-cash', Engine.fmtUSD(st.pf.cash));
+    set('t-value', Engine.fmtUSD(Engine.value(st.pf, st.round)));
+    const snap = Score.snapshot(st.pf, st.round);
+    set('t-div', snap.neff.toFixed(1).replace('.',',') + ' / 4');
+    const de = document.getElementById('t-div');
+    if(de) de.style.color = snap.neff>=4 ? 'var(--up)' : snap.neff>=2.5 ? 'var(--gold)' : 'var(--down)';
+    set('cb-cash', Engine.fmtUSD(cash));
+    set('cb-cost', (cost>=0?'−':'+') + ' ' + Engine.fmtUSD(Math.abs(cost)).replace('USD ','USD '));
+    const cb = document.getElementById('cb-cash');
+    if(cb) cb.classList.toggle('warn', cash < 0);
+    for(const a of GAME_DATA.assets){
+      const d = st.draft[a.id]||0;
+      const px = Engine.price(a.id, st.round);
+      const inp = document.getElementById('d-'+a.id);
+      if(inp && document.activeElement!==inp) inp.value = d;
+      const lbl = d>0 ? `Compran ${d} × ${px.toFixed(2).replace('.',',')} = −${Engine.fmtUSD(d*px)}`
+                : d<0 ? `Venden ${-d} × ${px.toFixed(2).replace('.',',')} = +${Engine.fmtUSD(-d*px)}`
+                : '';
+      set('c-'+a.id, lbl);
+    }
+  },
+
+  rLRM(){
+    const st = this.st;
+    const cash = st.pf.cash;
+    return `<div class="g-section" style="max-width:520px;margin:0 auto">
+      <div class="step-title">💵 Les sobró efectivo</div>
+      <div class="card" style="text-align:center">
+        <p style="color:var(--dim)">Efectivo sin invertir:</p>
+        <p class="mono" style="font-size:36px;font-weight:800;margin:8px 0">${Engine.fmtUSD(cash)}</p>
+        <p style="font-size:15px;line-height:1.55;margin:10px 0 18px">El Banco Central del Uruguay ofrece
+          <b>Letras de Regulación Monetaria (LRM)</b>: le prestás tu dinero al BCU por un año y te paga
+          <b class="gold">${(GAME_DATA.lrmRate*100).toFixed(0)}% de interés</b>. Es en pesos uruguayos
+          — en este juego suponemos que el dólar se mantiene estable.</p>
+        <div style="display:flex;gap:10px;flex-direction:column">
+          <button class="btn btn-gold btn-big" onclick="Grupo.answerLRM(true)" ${cash<1?'disabled':''}>Sí, colocar el sobrante en Letras</button>
+          <button class="btn btn-ghost" onclick="Grupo.answerLRM(false)">No, lo dejamos en efectivo (no gana interés)</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  rWait(){
+    const st = this.st;
+    const waitingOpen = !st.confirmed[st.round];
+    const nextR = st.round + 1;
+    return `<div class="waiting">
+      <div class="pulse">${waitingOpen?'⏳':'🔔'}</div>
+      <h2>${waitingOpen ? 'Esperando que el coordinador abra el mercado…'
+                        : '¡Órdenes confirmadas!'}</h2>
+      <p>${waitingOpen ? 'Mientras tanto, miren el monitor de precios y conversen la estrategia.'
+                       : 'Cuando suene la campana, verán qué pasó con sus inversiones.'}</p>
+      ${this.rMiniPortfolio()}
+      ${st.autonomous && st.confirmed[st.round] ? `
+        <button class="btn btn-primary btn-big" onclick="Grupo.advanceTo(${nextR})">
+          🔔 El coordinador anunció la Rueda ${nextR}
+        </button>` : ''}
+    </div>`;
+  },
+
+  rMiniPortfolio(){
+    const st = this.st;
+    const rows = Object.entries(st.pf.holdings).map(([id,q])=>{
+      const a = Engine.assetById(id);
+      return `<tr><td>${a.name}</td><td class="mono" style="text-align:right">${q}</td></tr>`;
+    }).join('');
+    if(!rows && !st.pf.lrm) return '';
+    return `<div class="card" style="width:100%;max-width:420px;text-align:left">
+      <h3 style="font-size:14px;color:var(--dim);margin-bottom:8px">SU PORTAFOLIO</h3>
+      <table style="width:100%;font-size:14.5px;border-collapse:collapse">${rows}
+        ${st.pf.lrm?`<tr><td>Letras (LRM)</td><td class="mono" style="text-align:right">${Engine.fmtUSD(st.pf.lrm)}</td></tr>`:''}
+        <tr><td>Efectivo</td><td class="mono" style="text-align:right">${Engine.fmtUSD(st.pf.cash)}</td></tr>
+      </table>
+    </div>`;
+  },
+
+  rResults(){
+    const st = this.st;
+    const value = Engine.value(st.pf, st.round);
+    const ret = (value - GAME_DATA.budget)/GAME_DATA.budget;
+    const g = this.goalStatus(value);
+    const acc = st.lastAccrual||{coupons:0,lrmInt:0};
+    return `<div class="g-section">
+      <div class="result-hero">
+        <p style="color:var(--dim)">Su portafolio ahora vale</p>
+        <div class="big mono">${Engine.fmtUSD(value)}</div>
+        <div class="pct ${ret>=0?'up':'down'}">${Engine.pct(ret)} desde el inicio</div>
+        ${g?`<div class="goal-badge ${g.cls}">${g.txt}</div>`:''}
+      </div>
+      <h2 class="sec">¿Qué pasó con cada activo?</h2>
+      ${GAME_DATA.assets.map(a=>{
+        const q = st.pf.holdings[a.id]||0;
+        const p0 = a.prices[st.round-2], p1 = a.prices[st.round-1];
+        const chg = (p1-p0)/p0;
+        return `<div class="asset-row"><div class="r1">
+          <span class="tag tag-${a.type==='bond'?'bond':a.type==='fund'?'fund':'stock'}">${a.typeLabel}</span>
+          <span class="nm">${a.name}</span>
+          <span class="px mono" style="font-size:15px">
+            ${p0.toFixed(2).replace('.',',')} → ${p1.toFixed(2).replace('.',',')}
+            <span class="chg ${chg>0?'up':chg<0?'down':'flat'}">${Engine.pct(chg)}</span>
+          </span></div>
+          ${q?`<p class="sub">Tienen ${q} → ${Engine.fmtUSD(q*p1)} ${chg<0?'😰':'🙂'}</p>`:''}
+        </div>`;
+      }).join('')}
+      ${(acc.coupons||acc.lrmInt)?`<div class="lesson">💰 <b>Cobraron rentas:</b>
+        ${acc.coupons?('cupones de bonos por <b>'+Engine.fmtUSD(acc.coupons)+'</b>. '):''}
+        ${acc.lrmInt?('intereses de las Letras por <b>'+Engine.fmtUSD(acc.lrmInt)+'</b>. '):''}
+        Ya están acreditados en su efectivo: pueden reinvertirlos.</div>`:''}
+      ${this.rComentarioRueda()}
+      <button class="btn btn-primary btn-big" style="width:100%;margin-top:14px" onclick="Grupo.st.step='trade';Grupo.save();Grupo.render()">
+        ➜ Ir a operar (Rueda ${st.round})
+      </button>
+    </div>`;
+  },
+
+  /* Comentario derivado de lo que realmente pasó con los precios */
+  rComentarioRueda(){
+    const st = this.st;
+    const chg = a => { const p0=a.prices[st.round-2], p1=a.prices[st.round-1]; return (p1-p0)/p0; };
+    const acc = GAME_DATA.assets.filter(a=>a.type==='stock');
+    const bon = GAME_DATA.assets.filter(a=>a.type==='bond');
+    const prom = arr => arr.reduce((t,a)=>t+chg(a),0)/Math.max(arr.length,1);
+    const pa = prom(acc), pb = prom(bon);
+    let txt;
+    if(pa < -0.10)
+      txt = `📉 Las acciones cayeron en promedio <b>${Engine.pct(pa)}</b>: eso es la <b>volatilidad</b>.
+             Los bonos se movieron ${Engine.pct(pb)} y además pagaron su cupón. Ahora decidan:
+             ¿vender, aguantar o comprar barato?`;
+    else if(pa > 0.10)
+      txt = `📈 Las acciones subieron en promedio <b>${Engine.pct(pa)}</b>, mucho más que los bonos
+             (${Engine.pct(pb)}). Más retorno vino con más riesgo: la próxima caída también va a ser mayor.`;
+    else
+      txt = `➡️ Rueda tranquila: las acciones se movieron ${Engine.pct(pa)} y los bonos ${Engine.pct(pb)}.
+             Los que cobraron cupones e intereses ganaron igual, sin depender del precio.`;
+    return `<div class="lesson">${txt}</div>`;
+  },
+
+  /* Panel de puntaje reutilizable */
+  rScore(sc, c){
+    const col = f => f>=0.8 ? 'linear-gradient(90deg,#12a35a,#22e07c)'
+               : f>=0.45 ? 'linear-gradient(90deg,#c99a1e,#f5c542)'
+               : 'linear-gradient(90deg,#a03030,#ff5d5d)';
+    const bar = (ico, lbl, got, max, hint) => {
+      const f = max>0 ? got/max : 0;
+      return `<div class="sbar">
+        <div class="sb-l"><span>${ico} ${lbl}</span><b>${got.toFixed(1).replace('.',',')} / ${max}</b></div>
+        <div class="sb-t"><i style="width:${Math.round(Math.min(1,f)*100)}%;background:${col(f)}"></i></div>
+        <p class="sb-h">${hint}</p></div>`;
+    };
+    const niv = Score.nivel(sc.total);
+    return `<div class="card">
+      <div class="score-hero">
+        <div class="num" style="color:${niv.c}">${sc.total.toFixed(1).replace('.',',')}</div>
+        <div class="den">puntos sobre 100${sc.bonus>0?' (+ bonus)':''}</div>
+        <div class="niv" style="color:${niv.c}">${niv.t}</div>
+      </div>
+      ${bar('🎯','Meta cumplida', sc.meta, SCORE_W.meta,
+            sc.rompioCapital ? 'La familia se comprometió a no perder capital y terminaron por debajo de USD 20.000.'
+            : 'Meta de la familia: ' + Engine.pct(c?c.metaRet:0.18,0) + '. Ustedes lograron ' + Engine.pct(sc.ret) + '.')}
+      ${bar('🧺','Diversificación', sc.div, SCORE_W.div,
+            'Tuvieron el equivalente a ' + sc.neff.toFixed(1).replace('.',',') +
+            ' posiciones distintas en promedio. Con 4 o más se obtiene el puntaje completo.')}
+      ${bar('⚖️','Perfil de riesgo', sc.perfil, SCORE_W.perfil,
+            'Esta familia necesitaba entre ' + Math.round(sc.band.min*100) + '% y ' + Math.round(sc.band.max*100) +
+            '% en acciones y fondo. Terminaron con ' + Math.round(sc.riskShare*100) + '%.')}
+      ${bar('🧠','Disciplina', sc.disc, SCORE_W.disc,
+            (sc.loss>0 ? 'Vendieron con pérdida por ' + Engine.fmtUSD(sc.loss) + '. ' : 'No vendieron con pérdida. ') +
+            'Efectivo quieto en promedio: ' + Math.round(sc.avgCash*100) + '%.')}
+      ${sc.bonus>0 ? bar('⭐','Bonus por superar la meta', sc.bonus, SCORE_W.bonus,
+            'Superar la meta suma poco a propósito: invertir es para llegar a un objetivo, no para ganarle al de al lado.') : ''}
+    </div>`;
+  },
+
+  rFinal(){
+    const st = this.st;
+    const c = this.caseOf();
+    const sc = Score.compute(st.pf, c, st.round);
+    const code = Engine.resultCode(sc.value, sc.total, st.caseId);
+    const fb = Score.feedback(sc, c);
+    return `<div class="g-section">
+      <div class="step-title" style="text-align:center">🏁 Resultado final — ${c?c.icon+' '+c.title:''}</div>
+      ${this.rScore(sc, c)}
+
+      <h2 class="sec">Qué dice su resultado</h2>
+      ${fb.map(f=>`<div class="fb"><span class="ico">${f.ico}</span><span>${f.txt}</span></div>`).join('')}
+
+      <h2 class="sec">La plata</h2>
+      <div class="result-hero">
+        <p style="color:var(--dim)">Con ${Engine.fmtUSD(GAME_DATA.budget)} iniciales terminaron con</p>
+        <div class="big mono ${sc.ret>=0?'up':'down'}">${Engine.fmtUSD(sc.value)}</div>
+        <div class="pct ${sc.ret>=0?'up':'down'}">${Engine.pct(sc.ret)} en ${GAME_DATA.rounds} años</div>
+      </div>
+      ${this.rDonut()}
+
+      <h2 class="sec">Para decirle al coordinador</h2>
+      <div class="code-box">${code}</div>
+      <p class="hint" style="text-align:center;margin-top:6px">Este código lleva su puntaje y su resultado.
+        Si no hay conexión, el coordinador lo ingresa para armar el ranking.</p>
+
+      <div class="lesson">🎓 <b>Lo que muestra el juego:</b> las acciones subieron y bajaron mucho
+        (<b>riesgo alto, retorno alto</b>); los bonos se movieron poco y pagaron intereses
+        (<b>riesgo bajo, retorno bajo</b>); el fondo repartió el riesgo automáticamente.
+        Quien <b>diversificó</b> sufrió menos la caída de la Rueda 2 — y quien vendió en el peor
+        momento se perdió la recuperación. Invertir es para metas, no para adivinar el mercado.</div>
+      ${st.pf.coupons||st.pf.lrmInterest?`<div class="lesson">💰 En total cobraron
+        <b>${Engine.fmtUSD(st.pf.coupons + st.pf.lrmInterest)}</b> en cupones e intereses — dinero que
+        ganaron aunque los precios no subieran. Eso es el <b>interés</b> trabajando para ustedes.</div>`:''}
+    </div>`;
+  },
+
+  rDonut(){
+    const st = this.st;
+    const parts = [];
+    let bonds=0, funds=0, stocks=0;
+    for(const [id,q] of Object.entries(st.pf.holdings)){
+      const a = Engine.assetById(id);
+      const v = q * Engine.price(id, st.round);
+      if(a.type==='bond') bonds+=v; else if(a.type==='fund') funds+=v; else stocks+=v;
+    }
+    if(bonds) parts.push({n:'Bonos', v:bonds, c:'#4da3ff'});
+    if(funds) parts.push({n:'Fondo', v:funds, c:'#9b7bff'});
+    if(stocks) parts.push({n:'Acciones', v:stocks, c:'#f5c542'});
+    if(st.pf.lrm) parts.push({n:'Letras', v:st.pf.lrm, c:'#22e07c'});
+    if(st.pf.cash>0.5) parts.push({n:'Efectivo', v:st.pf.cash, c:'#5a6480'});
+    if(!parts.length) return '';
+    const total = parts.reduce((s,p)=>s+p.v,0);
+    let angle = -90;
+    const segs = parts.map(p=>{
+      const sweep = p.v/total*360;
+      const large = sweep>180?1:0;
+      const r=42, cx=50, cy=50;
+      const a0 = angle*Math.PI/180, a1 = (angle+sweep)*Math.PI/180;
+      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
+      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+      angle += sweep;
+      if(sweep>=359.9) return `<circle cx="50" cy="50" r="42" fill="none" stroke="${p.c}" stroke-width="15"/>`;
+      return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"
+              fill="none" stroke="${p.c}" stroke-width="15"/>`;
+    }).join('');
+    return `<div class="card"><h3 style="font-size:14px;color:var(--dim);margin-bottom:10px">COMPOSICIÓN FINAL</h3>
+      <div class="donut-wrap">
+        <svg width="130" height="130" viewBox="0 0 100 100">${segs}</svg>
+        <div class="legend">${parts.map(p=>`<span><span class="sw" style="background:${p.c}"></span>
+          ${p.n}: <b class="mono">${Math.round(p.v/total*100)}%</b> (${Engine.fmtUSD(p.v)})</span>`).join('')}</div>
+      </div></div>`;
+  }
+};
+
+/* ================================================================
+   COORDINADOR — control de la sesión y de las ruedas
+   ================================================================ */
+const Coord = {
+  session:null, groups:{}, manual:[], connected:false,
+
+  mount(){
+    if(!this.session){
+      const saved = localStorage.getItem('bvm_coord');
+      if(saved){
+        const s = JSON.parse(saved);
+        this.session = s.session; this.groups = s.groups||{}; this.manual = s.manual||[];
+      }
+    }
+    if(this.session && !this.connected) this._connect();
+    this.render();
+  },
+
+  save(){
+    localStorage.setItem('bvm_coord', JSON.stringify({session:this.session, groups:this.groups, manual:this.manual}));
+  },
+
+  _connect(){
+    this.connected = true;
+    Sync.connect(this.session.code, 'coord', {
+      onGroup: g=>{ this.groups[g.id]=g; this.save(); this.render(); }
+    });
+    localStorage.setItem('bvm_code', this.session.code);
+  },
+
+  create(){
+    const letters = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let code='';
+    for(let i=0;i<4;i++) code += letters[Math.floor(Math.random()*letters.length)];
+    this.session = {code, state:{round:0, phase:'lobby'}};
+    this.groups = {}; this.manual = [];
+    this._connect();
+    this.save(); this.render();
+  },
+
+  reset(){
+    if(!confirm('¿Terminar esta sesión y empezar de cero?')) return;
+    localStorage.removeItem('bvm_coord');
+    this.session = null; this.groups = {}; this.manual = []; this.connected = false;
+    this.render();
+  },
+
+  setRound(r){
+    const phase = r>=3 ? 'final' : 'play';
+    const labels = {1:'¿Abrir la Rueda 1? Los grupos podrán comprar sus primeros activos.',
+                    2:'¿Pasar a la Rueda 2? Los precios cambian (las acciones caen) y los grupos podrán vender y comprar.',
+                    3:'¿Tocar la campana final? Los precios se actualizan por última vez y se cierra el mercado.'};
+    if(!confirm(labels[r])) return;
+    this.session.state = {round:r, phase};
+    Sync.sendState(this.session.state);
+    ringBell('RUEDA '+r+(r>=3?' — CIERRE':''), ROUND_SUBS[r]||'', 2200);
+    this.save(); this.render();
+  },
+
+  addManual(){
+    const name = document.getElementById('m-name').value.trim();
+    const code = document.getElementById('m-code').value.trim();
+    const r = Engine.decodeResult(code);
+    if(!name){ alert('Escribí el nombre del grupo.'); return; }
+    if(r===null){ alert('El código no es válido. Revisá que esté bien copiado (ej: 43F5VX-D).'); return; }
+    this.manual.push({name, value:r.value, score:r.score, caseId:r.caseId});
+    this.save(); this.render();
+  },
+  delManual(i){ this.manual.splice(i,1); this.save(); this.render(); },
+
+  ranking(){
+    const rows = [
+      ...Object.values(this.groups).map(g=>({name:g.name, value:g.value, caseId:g.caseId,
+                                             score:g.score||0, parts:g.parts, src:'sync'})),
+      ...this.manual.map(m=>({name:m.name, value:m.value, caseId:m.caseId,
+                              score:m.score||0, src:'manual'}))
+    ];
+    // gana el puntaje; el valor sólo desempata
+    rows.sort((a,b)=> (b.score - a.score) || (b.value - a.value));
+    return rows;
+  },
+
+  caseIcon(id){ const c = GAME_DATA.cases.find(c=>c.id===id); return c?c.icon:'❔'; },
+
+  render(){
+    const el = document.getElementById('view-coord');
+    if(!this.session){
+      el.innerHTML = `
+      <div class="topbar" style="margin:-16px -16px 16px"><span class="brand">BOLSA <span class="tick">📊</span> · COORDINADOR</span>
+        <span class="conn-pill"></span></div>
+      <div style="max-width:520px;margin:40px auto;display:flex;flex-direction:column;gap:14px">
+        <h1 style="font-size:28px">🎛️ Panel del coordinador</h1>
+        <p class="hint">Creá una sesión para esta clase o feria. Los grupos entran con el código
+          de 4 letras desde sus tablets o celulares, y el monitor de mercado se proyecta en la pantalla grande.
+          Si no hay internet ni red, igual podés coordinar las ruedas a viva voz y cargar los resultados con
+          los códigos que muestra cada tablet al final.</p>
+        <button class="btn btn-primary btn-big" onclick="Coord.create()">➕ Crear sesión nueva</button>
+      </div>`;
+      Sync._updatePills();
+      return;
+    }
+
+    const st = this.session.state;
+    const groups = Object.values(this.groups).sort((a,b)=>b.value-a.value);
+    const phaseTxt = st.phase==='lobby' ? 'Sala de espera — los grupos se están uniendo'
+                   : st.phase==='play' ? 'Rueda '+st.round+' en curso'
+                   : 'Mercado cerrado — resultados finales';
+
+    el.innerHTML = `
+    <div class="topbar" style="margin:-16px -16px 16px">
+      <span class="brand">BOLSA <span class="tick">📊</span> · COORDINADOR</span>
+      <span class="round-pill">${phaseTxt}</span>
+      <span class="conn-pill"></span>
+      <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="Coord.reset()">Terminar sesión</button>
+    </div>
+    <div class="coord-grid">
+      <div class="coord-steps">
+        <div class="card" style="text-align:center">
+          <div class="hint">CÓDIGO DE SALA</div>
+          <div class="session-code">${this.session.code}</div>
+          <p class="hint" style="margin-top:6px">Los grupos entran en <b>${location.origin==='null'||location.protocol==='file:'?'la app':location.host+location.pathname.replace(/index\.html$/,'')}</b> → “Grupo / Familia” con este código.</p>
+        </div>
+        <div class="card coord-steps">
+          <h2 class="sec" style="margin:0 0 4px">Control de ruedas</h2>
+          <button class="btn ${st.round===0?'btn-gold':''}" ${st.round>=1?'disabled':''} onclick="Coord.setRound(1)">🔔 1 · Abrir Rueda 1 — armar portafolios</button>
+          <button class="btn ${st.round===1?'btn-gold':''}" ${st.round!==1?'disabled':''} onclick="Coord.setRound(2)">🔔 2 · Rueda 2 — caen las acciones</button>
+          <button class="btn ${st.round===2?'btn-gold':''}" ${st.round!==2?'disabled':''} onclick="Coord.setRound(3)">🔔 3 · Campana final — resultados</button>
+          <p class="hint">La campana cambia los precios en el monitor y en las tablets de todos los grupos conectados.
+             Si un grupo juega sin conexión, anunciá el cambio de rueda a viva voz.</p>
+          <button class="btn" onclick="window.open(location.pathname+'#monitor?sala='+Coord.session.code,'_blank')">📈 Abrir monitor de mercado</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h2 class="sec" style="margin:0 0 10px">Grupos conectados (${groups.length})</h2>
+          ${groups.length? `<table class="groups-table"><tr>
+              <th></th><th>Familia</th><th>Rueda</th><th>Divers.</th><th>Valor</th><th>Puntaje</th><th>Meta</th></tr>
+            ${groups.map(g=>{
+              const ret = g.value/GAME_DATA.budget - 1;
+              const c = GAME_DATA.cases.find(c=>c.id===g.caseId);
+              const target = GAME_DATA.budget*(1+(c?c.goalPct:0));
+              const sem = g.value>=target?'g':g.value>=GAME_DATA.budget?'y':'r';
+              return `<tr>
+                <td>${this.caseIcon(g.caseId)}</td>
+                <td><b>${g.name}</b> ${g.done?'✔':'<span style="color:var(--faint)">operando…</span>'}</td>
+                <td class="mono">${g.round}</td>
+                <td class="mono" style="color:${(g.neff||1)>=4?'var(--up)':(g.neff||1)>=2.5?'var(--gold)':'var(--down)'}">${(g.neff||1).toFixed(1).replace('.',',')}</td>
+                <td class="mono">${Engine.fmtUSD(g.value)} <span class="chg ${ret>=0?'up':'down'}" style="font-size:12px">${Engine.pct(ret)}</span></td>
+                <td class="mono" style="font-weight:800;color:var(--gold)">${g.score!==undefined?g.score.toFixed(1).replace('.',','):'—'}</td>
+                <td><span class="sem ${sem}"></span></td>
+              </tr>`;}).join('')}
+          </table>`
+          : `<p class="hint">Todavía no entró ningún grupo. En modo local (misma PC) abrí las pestañas de grupo
+             en este navegador; en modo online los grupos entran desde sus dispositivos con el código.</p>`}
+        </div>
+
+        ${st.phase==='final' ? this.rRanking() : ''}
+
+        <div class="card" style="margin-top:16px">
+          <h2 class="sec" style="margin:0 0 8px">Cargar resultado sin conexión</h2>
+          <p class="hint" style="margin-bottom:10px">Al final del juego, cada tablet muestra un código
+            (ej: <b class="mono">43F5VX-D</b>). Cargalo acá para sumar al grupo al ranking.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="input" id="m-name" placeholder="Nombre del grupo" style="flex:2;min-width:140px">
+            <input class="input mono" id="m-code" placeholder="CÓDIGO" style="flex:1;min-width:110px;text-transform:uppercase">
+            <button class="btn btn-primary" onclick="Coord.addManual()">Agregar</button>
+          </div>
+          ${this.manual.length?`<table class="groups-table" style="margin-top:10px">
+            ${this.manual.map((m,i)=>`<tr><td>${this.caseIcon(m.caseId)}</td><td><b>${m.name}</b></td>
+              <td class="mono">${Engine.fmtUSD(m.value)}</td>
+              <td class="mono" style="font-weight:800;color:var(--gold)">${m.score!==undefined?m.score:'—'} pts</td>
+              <td style="text-align:right"><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="Coord.delManual(${i})">✕</button></td></tr>`).join('')}
+          </table>`:''}
+        </div>
+      </div>
+    </div>`;
+    Sync._updatePills();
+  },
+
+  rRanking(){
+    const rows = this.ranking();
+    if(!rows.length) return '';
+    const medal = ['🥇','🥈','🥉'];
+    const podium = rows.slice(0,3);
+    const order = podium.length===3 ? [1,0,2] : podium.length===2 ? [1,0] : [0];
+    const partsTxt = p => p ? `M ${p.meta} · D ${p.div} · P ${p.perfil} · Di ${p.disc}` : '';
+    return `<div class="card" style="margin-top:16px">
+      <h2 class="sec" style="margin:0 0 4px">🏆 Ranking final — por puntaje</h2>
+      <div class="podium">
+        ${order.map(i=>{
+          const r = podium[i]; if(!r) return '';
+          const ret = r.value/GAME_DATA.budget-1;
+          return `<div class="pod p${i+1}">
+            <div class="medal">${medal[i]}</div>
+            <div class="nm">${this.caseIcon(r.caseId)} ${r.name}</div>
+            <div class="sc">${r.score.toFixed(1).replace('.',',')}</div>
+            <div class="vl">${Engine.fmtUSD(r.value)}<br><span class="${ret>=0?'up':'down'}">${Engine.pct(ret)}</span></div>
+          </div>`;}).join('')}
+      </div>
+      <table class="groups-table">
+        <tr><th></th><th>Familia</th><th>Puntaje</th><th>Desglose</th><th>Valor</th><th>Retorno</th></tr>
+        ${rows.map((r,i)=>{
+          const ret = r.value/GAME_DATA.budget-1;
+          return `<tr><td>${i+1}º</td>
+            <td>${this.caseIcon(r.caseId)} <b>${r.name}</b></td>
+            <td class="mono" style="font-weight:800;color:var(--gold)">${r.score.toFixed(1).replace('.',',')}</td>
+            <td class="mono" style="font-size:12.5px;color:var(--dim)">${partsTxt(r.parts)}</td>
+            <td class="mono">${Engine.fmtUSD(r.value)}</td>
+            <td class="mono ${ret>=0?'up':'down'}">${Engine.pct(ret)}</td></tr>`;}).join('')}
+      </table>
+      <p class="hint" style="margin-top:10px"><b>M</b> meta (40) · <b>D</b> diversificación (30) ·
+        <b>P</b> perfil de riesgo (20) · <b>Di</b> disciplina (10).</p>
+      <div class="lesson" style="margin-top:12px">🎤 <b>Para el cierre:</b> mostrá la columna de retorno
+        al lado de la del puntaje. Casi siempre hay un grupo que ganó más plata pero quedó abajo en el
+        ranking. Esa es la conversación: ¿ganaron por buenas decisiones o porque salió bien la apuesta?
+        ¿Qué hubiera pasado si en la Rueda 3 las acciones seguían cayendo?</div>
+    </div>`;
+  }
+};
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+route();
+</script>
+</body>
+</html>
