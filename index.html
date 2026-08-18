@@ -262,6 +262,8 @@
     </button>
   </div>
   <p class="conn-note" id="home-conn"></p>
+  <p class="conn-note" style="opacity:.65;margin-top:2px">
+    versión <b class="mono" id="home-ver">—</b> · base de datos <b id="home-db">—</b></p>
 </div>
 
 <!-- ============ MONITOR ============ -->
@@ -282,6 +284,7 @@
     <button class="btn" onclick="Monitor.setScen('A')">A</button>
     <button class="btn" onclick="Monitor.setScen('B')">B</button>
     <button class="btn" onclick="Monitor.setScen('C')">C</button>
+    <button class="btn mute-btn" title="Silenciar la campana" onclick="Campana.toggle()">🔔</button>
     <button class="btn" onclick="location.hash=''">⌂</button>
   </div>
 </div>
@@ -303,6 +306,10 @@
 /* ================================================================
    GAME_DATA — editá acá los activos, precios y casos del juego
    ================================================================ */
+/* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
+   guardado en caché. Subí el número cada vez que publiques una versión nueva. */
+const VERSION = '2026.08.18-b';
+
 const GAME_DATA = {
   budget: 20000,
   fee: 0.01,           // comisión del corredor: 1% sobre cada operación, compra o venta               // USD por familia
@@ -852,7 +859,94 @@ window.addEventListener('hashchange', route);
 /* ================================================================
    BELL — campana de cambio de ronda
    ================================================================ */
+/* ================================================================
+   CAMPANA — sonido generado por el navegador, sin archivos externos.
+   Una campana real no suena a una nota sola: vibra en frecuencias que
+   no son múltiplos exactos de la fundamental. Por eso las proporciones
+   raras de PARCIALES: son las que le dan el timbre metálico.
+   ================================================================ */
+const Campana = {
+  ctx: null,
+  muted: localStorage.getItem('bvm_mute') === '1',
+
+  /* Los navegadores no dejan sonar nada hasta que la persona toca algo.
+     Enganchamos el primer toque para dejar el audio listo. */
+  init(){
+    const abrir = () => {
+      if(!this.ctx){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(AC) this.ctx = new AC();
+      }
+      if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    };
+    ['pointerdown','keydown','touchstart'].forEach(ev =>
+      window.addEventListener(ev, abrir, {passive:true}));
+  },
+
+  toggle(){
+    this.muted = !this.muted;
+    localStorage.setItem('bvm_mute', this.muted ? '1' : '0');
+    if(!this.muted) this.tocar(1);
+    document.querySelectorAll('.mute-btn').forEach(b => b.textContent = this.muted ? '🔕' : '🔔');
+  },
+
+  /* Un golpe de badajo */
+  golpe(t0, vol){
+    const ctx = this.ctx;
+    const PARCIALES = [
+      {r:0.56, g:1.00, d:3.6},   // el "hum", el zumbido grave que queda flotando
+      {r:1.00, g:0.85, d:3.0},   // la fundamental
+      {r:1.50, g:0.55, d:2.2},
+      {r:2.24, g:0.42, d:1.5},
+      {r:2.76, g:0.35, d:1.1},
+      {r:4.07, g:0.22, d:0.7},
+      {r:5.43, g:0.15, d:0.45}
+    ];
+    const BASE = 520;
+    const master = ctx.createGain();
+    master.gain.value = vol;
+    master.connect(ctx.destination);
+
+    for(const p of PARCIALES){
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = BASE * p.r;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(p.g * 0.16, t0 + 0.004);   // ataque casi instantáneo
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + p.d);    // los agudos se apagan antes
+      osc.connect(g); g.connect(master);
+      osc.start(t0); osc.stop(t0 + p.d + 0.1);
+    }
+
+    /* El "clang" del metal al ser golpeado: ruido muy corto y filtrado */
+    const dur = 0.16;
+    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate*dur), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/data.length, 5);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=2600; bp.Q.value=1.2;
+    const ng = ctx.createGain(); ng.gain.value = 0.16;
+    src.connect(bp); bp.connect(ng); ng.connect(master);
+    src.start(t0); src.stop(t0 + dur);
+  },
+
+  /* Varios golpes, como la campana de apertura de una bolsa de verdad */
+  tocar(golpes = 3){
+    if(this.muted) return;
+    if(!this.ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      this.ctx = new AC();
+    }
+    if(this.ctx.state === 'suspended') this.ctx.resume();
+    const t0 = this.ctx.currentTime + 0.03;
+    for(let i=0;i<golpes;i++) this.golpe(t0 + i*0.52, i===0 ? 1 : 0.82 - i*0.06);
+  }
+};
+
 function ringBell(title, sub, ms=3800){
+  Campana.tocar(3);
   const o = document.getElementById('bell-overlay');
   document.getElementById('bell-title').textContent = title;
   document.getElementById('bell-sub').textContent = sub;
@@ -888,6 +982,16 @@ function newsRonda3(){
 }
 
 /* Render de las noticias de una ronda. conClave=true sólo para el coordinador. */
+function sellarVersion(){
+  const v = document.getElementById('home-ver');
+  if(v) v.textContent = VERSION;
+  const d = document.getElementById('home-db');
+  if(d){
+    d.textContent = FIREBASE_CONFIG ? 'configurada' : 'sin configurar';
+    d.style.color = FIREBASE_CONFIG ? 'var(--up)' : 'var(--down)';
+  }
+}
+
 function renderNews(round, conClave){
   let items = (GAME_DATA.news && GAME_DATA.news[round]) || [];
   if(items === 'DINAMICA') items = newsRonda3();
@@ -1217,6 +1321,8 @@ const Grupo = {
   topbar(){
     const st = this.st;
     return `<div class="topbar">
+      <button class="btn mute-btn" title="Silenciar la campana" style="float:right;margin-left:8px"
+              onclick="Campana.toggle()">🔔</button>
       <span class="brand">BOLSA <span class="tick"><svg class="ingot" viewBox="0 0 24 20" aria-hidden="true"><path d="M2.5 17.5h19" stroke="#7a6420" stroke-width="1.2" stroke-linecap="round"/><path d="M2.5 17.5v-15" stroke="#7a6420" stroke-width="1.2" stroke-linecap="round"/><path d="M4.5 14.5 9 9.5l3.5 3L20 4.5" fill="none" stroke="#E0A81C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.6 4.5H20v5.4" fill="none" stroke="#FFDF7A" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></span> ${st.name?('· '+st.name):''}</span>
       <span class="round-pill">Ronda <span class="n">${st.round}</span>/${GAME_DATA.rounds}</span>
       <span class="conn-pill"></span>
@@ -1886,6 +1992,8 @@ const Coord = {
 /* ================================================================
    BOOT
    ================================================================ */
+Campana.init();
+sellarVersion();
 route();
 </script>
 </body>
