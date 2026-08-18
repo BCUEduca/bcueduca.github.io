@@ -278,6 +278,8 @@
   <div class="mon-head">
     <h1>BOLSA DE VALORES <span class="tick">— MONTEVIDEO</span></h1>
     <div class="mon-round" id="mon-round">RONDA 1</div>
+    <div id="mon-sala" style="font-size:clamp(10px,1vw,13px);letter-spacing:1.2px;color:var(--faint);
+         text-transform:uppercase;margin-left:18px"></div>
     <div class="mon-clock"><span class="lbl">Tiempo</span><span class="cd" id="mon-clock">--:--</span></div>
   </div>
   <div class="mon-grid" id="mon-grid"></div>
@@ -318,7 +320,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.18-e';
+const VERSION = '2026.08.18-f';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1043,7 +1045,7 @@ const ROUND_SUBS = {
    MONITOR — pantalla de mercado para el proyector
    ================================================================ */
 const Monitor = {
-  round:1, mounted:false, groups:{},
+  round:1, mounted:false, groups:{}, _recibida:null,
 
   /* Ranking en vivo, ordenado por puntaje igual que el del coordinador */
   ranking(){
@@ -1060,10 +1062,23 @@ const Monitor = {
         Monitor.tickTimer();
       }, 1000);
       const params = new URLSearchParams((location.hash.split('?')[1]||''));
+      this._sala = params.get('sala')||localStorage.getItem('bvm_code')||'BVM1';
+      setTimeout(()=>{
+        const el = document.getElementById('mon-sala');
+        if(el) el.innerHTML = 'Sala <b style="color:var(--dim)">'+this._sala+'</b> · '
+          + (Sync.mode==='online' ? '<b style="color:var(--up)">en línea</b>'
+             : Sync.mode==='local' ? '<b style="color:var(--gold)">local</b>'
+             : '<b style="color:var(--down)">manual</b>');
+      }, 1500);
       Sync.connect(params.get('sala')||localStorage.getItem('bvm_code')||'BVM1', 'monitor', {
         onState: st=>{
-          if(st && st.scen) applyScenario(st.scen);
-          if(st && st.round && st.round!==this.round && st.phase!=='lobby') this.setRound(st.round, true);
+          if(!st) return;
+          if(st.scen) applyScenario(st.scen);
+          if(st.phase === 'lobby') return;
+          if(st.round && st.round !== this._recibida){
+            this._recibida = st.round;
+            this.setRound(st.round, true);
+          }
         },
         onGroup: g=>{ if(g && g.id){ this.groups[g.id] = g; if(this.round>=GAME_DATA.rounds) this.renderNews(); } }
       });
@@ -1151,9 +1166,8 @@ const Monitor = {
   },
 
   setRound(r, bell){
-    this.startTimer(r);                 // el cronómetro se reinicia siempre, aunque la ronda sea la misma
-    if(r===this.round){ this.render(); return; }
     this.round = r;
+    this.startTimer(r);                          // el cronómetro se reinicia siempre
     if(bell!==false) ringBell('¡SUENA LA CAMPANA!  RONDA '+r, ROUND_SUBS[r]||'');
     this.render(true);
   },
