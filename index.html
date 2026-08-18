@@ -308,7 +308,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.18-b';
+const VERSION = '2026.08.18-c';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1014,7 +1014,14 @@ const ROUND_SUBS = {
    MONITOR — pantalla de mercado para el proyector
    ================================================================ */
 const Monitor = {
-  round:1, mounted:false,
+  round:1, mounted:false, groups:{},
+
+  /* Ranking en vivo, ordenado por puntaje igual que el del coordinador */
+  ranking(){
+    return Object.values(this.groups)
+      .filter(g => g && g.name)
+      .sort((a,b) => ((b.score||0)-(a.score||0)) || ((b.value||0)-(a.value||0)));
+  },
 
   mount(){
     if(!this.mounted){
@@ -1029,7 +1036,8 @@ const Monitor = {
         onState: st=>{
           if(st && st.scen) applyScenario(st.scen);
           if(st && st.round && st.round!==this.round && st.phase!=='lobby') this.setRound(st.round, true);
-        }
+        },
+        onGroup: g=>{ if(g && g.id){ this.groups[g.id] = g; if(this.round>=3) this.renderNews(); } }
       });
     }
     this.render();
@@ -1046,8 +1054,30 @@ const Monitor = {
   renderNews(){
     const box = document.getElementById('mon-news');
     if(!box) return;
-    const items = (GAME_DATA.news && GAME_DATA.news[this.round]) || [];
     clearInterval(this._newsTimer);
+
+    /* Cerrado el mercado, el zócalo deja de dar noticias y pasa a dar resultados */
+    if(this.round >= 3){
+      const rk = this.ranking();
+      if(rk.length){
+        const medalla = ['🥇','🥈','🥉'];
+        const podio = rk.slice(0,3).map((g,i)=>
+          `<span style="margin-right:22px">${medalla[i]||''} <b>${g.name}</b>
+             <span style="color:var(--gold);font-family:var(--mono)">${(g.score||0).toFixed(1).replace('.',',')} pts</span></span>`
+        ).join('');
+        box.innerHTML = `<span class="lbl" style="background:var(--gold);color:#1a1400">🏆 RESULTADO</span>
+          <div class="txt">${podio}<div class="sub">Gana quien invirtió mejor de acuerdo a su objetivo, no quien más dinero juntó</div></div>`;
+        return;
+      }
+      // sin grupos conectados (modo autónomo): mostramos el cierre del mercado
+      box.innerHTML = `<span class="lbl" style="background:var(--gold);color:#1a1400">🔔 CIERRE</span>
+        <div class="txt">Mercado cerrado — la recuperación no fue pareja
+          <div class="sub">Cada grupo tiene su resultado en pantalla. Dicten su código al coordinador.</div></div>`;
+      return;
+    }
+
+    let items = (GAME_DATA.news && GAME_DATA.news[this.round]) || [];
+    if(items === 'DINAMICA') items = newsRonda3();   // el zócalo no entendía este caso: mostraba "undefined"
     if(!items.length){ box.innerHTML = ''; return; }
     let i = 0;
     const pintar = () => {
@@ -1897,11 +1927,15 @@ const Coord = {
         </div>
       </div>
       <div>
+        ${st.phase==='final' ? this.rRanking() : ''}
         ${this.rEscenario()}
-        ${st.round>=1 ? `<div class="card" style="margin-bottom:16px">
+        ${st.round>=1 ? (st.round>=3 ? `<details class="card" style="margin-bottom:16px">
+          <summary style="cursor:pointer" class="news-title">📰 Noticias del cierre — tocá para desplegarlas</summary>
+          <div style="margin-top:12px">${renderNews(st.round, true)}</div>
+        </details>` : `<div class="card" style="margin-bottom:16px">
           <div class="news-title">📰 Noticias de la Ronda ${st.round} — para leer en voz alta</div>
           ${renderNews(st.round, true)}
-        </div>` : ''}
+        </div>`) : ''}
         <div class="card">
           <h2 class="sec" style="margin:0 0 10px">Grupos conectados (${groups.length})</h2>
           ${groups.length? `<table class="groups-table"><tr>
@@ -1924,8 +1958,6 @@ const Coord = {
           : `<p class="hint">Todavía no entró ningún grupo. En modo local (misma PC) abrí las pestañas de grupo
              en este navegador; en modo online los grupos entran desde sus dispositivos con el código.</p>`}
         </div>
-
-        ${st.phase==='final' ? this.rRanking() : ''}
 
         <div class="card" style="margin-top:16px">
           <h2 class="sec" style="margin:0 0 8px">Cargar resultado sin conexión</h2>
