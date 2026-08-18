@@ -85,7 +85,14 @@
   .mon-head h1{font-size:clamp(18px,2.4vw,30px);letter-spacing:2px}
   .mon-head h1 .tick{color:var(--gold)}
   .mon-round{font-size:clamp(15px,1.8vw,22px);color:var(--gold);font-weight:800;letter-spacing:1px}
-  .mon-clock{margin-left:auto;font-family:var(--mono);color:var(--dim);font-size:clamp(14px,1.6vw,20px)}
+  .mon-clock{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .mon-clock .lbl{color:var(--faint);font-size:clamp(10px,1vw,13px);letter-spacing:1.5px;text-transform:uppercase}
+  .mon-clock .cd{font-family:var(--mono);font-weight:800;font-size:clamp(28px,4vw,54px);line-height:1;
+                 letter-spacing:2px;color:var(--up);font-variant-numeric:tabular-nums}
+  .mon-clock .cd.warn{color:var(--gold)}
+  .mon-clock .cd.crit{color:var(--down);animation:latir 1s infinite}
+  .mon-clock .cd.done{color:var(--down)}
+  @keyframes latir{0%,100%{opacity:1}50%{opacity:.35}}
   .mon-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:10px;padding:10px 14px}
   @media (max-width:1000px){.mon-grid{grid-template-columns:repeat(2,1fr)}}
   @media (max-width:640px){.mon-grid{grid-template-columns:1fr}}
@@ -271,7 +278,7 @@
   <div class="mon-head">
     <h1>BOLSA DE VALORES <span class="tick">— MONTEVIDEO</span></h1>
     <div class="mon-round" id="mon-round">RONDA 1</div>
-    <div class="mon-clock mono" id="mon-clock">--:--:--</div>
+    <div class="mon-clock"><span class="lbl">Tiempo</span><span class="cd" id="mon-clock">--:--</span></div>
   </div>
   <div class="mon-grid" id="mon-grid"></div>
   <div class="mon-news" id="mon-news"></div>
@@ -285,6 +292,8 @@
     <button class="btn" onclick="Monitor.setScen('A')">A</button>
     <button class="btn" onclick="Monitor.setScen('B')">B</button>
     <button class="btn" onclick="Monitor.setScen('C')">C</button>
+    <button class="btn" title="Pausar o reanudar el tiempo" onclick="Monitor.toggleTimer()">⏯</button>
+    <button class="btn" title="Agregar un minuto" onclick="Monitor.addTime(1)">+1 min</button>
     <button class="btn mute-btn" title="Silenciar la campana" onclick="Campana.toggle()">🔔</button>
     <button class="btn" onclick="location.hash=''">⌂</button>
   </div>
@@ -309,7 +318,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.18-d';
+const VERSION = '2026.08.18-e';
 
 const GAME_DATA = {
   budget: 20000,
@@ -317,6 +326,7 @@ const GAME_DATA = {
   yearsPerRound: 1,            // cada ronda ≈ 1 año
   lrmRate: 0.09,               // tasa anual LRM (en $, se asume TC estable en el juego)
   rounds: 4,
+  timers: {1:7, 2:6, 3:5, 4:2},   // minutos para operar en cada ronda (proyectados en el monitor)
   panicRounds: [2],    // rondas donde vender con pérdida cuenta como pánico
   assets: [
     {
@@ -1047,8 +1057,7 @@ const Monitor = {
       this.mounted = true;
       setInterval(()=>{
         const d = new Date();
-        document.getElementById('mon-clock').textContent =
-          d.toLocaleTimeString('es-UY',{hour12:false});
+        Monitor.tickTimer();
       }, 1000);
       const params = new URLSearchParams((location.hash.split('?')[1]||''));
       Sync.connect(params.get('sala')||localStorage.getItem('bvm_code')||'BVM1', 'monitor', {
@@ -1063,6 +1072,38 @@ const Monitor = {
   },
 
   /* Cambio manual del escenario de cierre (modo sin conexión) */
+  /* ---------- cronómetro de ronda ---------- */
+  timerLeft: null, timerOn: false,
+
+  startTimer(r){
+    const min = (GAME_DATA.timers && GAME_DATA.timers[r]) || 0;
+    this.timerLeft = min * 60;
+    this.timerOn = min > 0;
+    this._avisado = false;
+    this.paintTimer();
+  },
+  toggleTimer(){ if(this.timerLeft!==null) this.timerOn = !this.timerOn; this.paintTimer(); },
+  addTime(min){ if(this.timerLeft===null) this.timerLeft = 0;
+                this.timerLeft += min*60; this._avisado = false; this.timerOn = true; this.paintTimer(); },
+  tickTimer(){
+    if(this.timerOn && this.timerLeft > 0){
+      this.timerLeft--;
+      if(this.timerLeft === 0 && !this._avisado){ this._avisado = true; Campana.tocar(1); }
+    }
+    this.paintTimer();
+  },
+  paintTimer(){
+    const el = document.getElementById('mon-clock');
+    if(!el) return;
+    if(this.timerLeft === null){ el.textContent = '--:--'; el.className = 'cd'; return; }
+    const t = Math.max(0, this.timerLeft);
+    const mm = String(Math.floor(t/60)).padStart(2,'0');
+    const ss = String(t%60).padStart(2,'0');
+    el.textContent = t===0 ? 'TIEMPO' : (mm+':'+ss);
+    el.className = 'cd' + (t===0 ? ' done' : t<=60 ? ' crit' : t<=120 ? ' warn' : '')
+                        + (this.timerOn || t===0 ? '' : ' warn');
+  },
+
   setScen(letra){
     applyScenario(letra);
     if(this.round === 3) ringBell('CIERRE — ESCENARIO ' + letra, 'La recuperación no fue pareja', 2000);
@@ -1110,6 +1151,7 @@ const Monitor = {
   },
 
   setRound(r, bell){
+    this.startTimer(r);                 // el cronómetro se reinicia siempre, aunque la ronda sea la misma
     if(r===this.round){ this.render(); return; }
     this.round = r;
     if(bell!==false) ringBell('¡SUENA LA CAMPANA!  RONDA '+r, ROUND_SUBS[r]||'');
@@ -1295,6 +1337,11 @@ const Grupo = {
 
   pickCase(id){
     this.st.caseId = id;
+    this.st.step = 'briefing';
+    this.save(); this.broadcast(); this.render();
+  },
+
+  empezar(){
     // en modo sincronizado espera a que el coordinador abra el mercado
     const open = this.st.autonomous || (this.coordState && this.coordState.phase==='play');
     this.st.step = open ? 'trade' : 'wait';
@@ -1385,6 +1432,7 @@ const Grupo = {
     let body = '';
     if(st.step==='join') body = this.rJoin();
     else if(st.step==='case') body = this.rCase();
+    else if(st.step==='briefing') body = this.rBriefing();
     else if(st.step==='trade') body = this.rTrade();
     else if(st.step==='lrm') body = this.rLRM();
     else if(st.step==='wait') body = this.rWait();
@@ -1412,21 +1460,37 @@ const Grupo = {
     </div>`;
   },
 
+  /* La familia ya no se elige: se asigna por número de equipo.
+     Ahorra la negociación y garantiza que las tres estén representadas. */
   rCase(){
     return `<div class="g-section">
-      <div class="step-title">Elijan su familia</div>
-      <p class="step-sub">Cada familia tiene una historia y una meta de ahorro distinta.
-        Su desafío: invertir USD ${Engine.fmt(GAME_DATA.budget)} en la Bolsa para cumplirla.</p>
-      ${GAME_DATA.cases.map(c=>`
-        <button class="card case-card" style="width:100%;text-align:left;margin-bottom:12px;cursor:pointer"
-                onclick="Grupo.pickCase('${c.id}')">
-          <h3>${c.icon} ${c.title}</h3>
-          <p>${c.story}</p>
-          <div class="meta">🎯 ${c.goalText}</div>
-          <div class="meta" style="margin-top:6px">⚖️ Perfil ${c.perfil.label}: entre
-            ${Math.round(c.perfil.min*100)}% y ${Math.round(c.perfil.max*100)}% en acciones y fondo.</div>
-        </button>`).join('')}
+      <div class="step-title">¿Qué número de equipo son?</div>
+      <p class="step-sub">El coordinador les asignó un número. Tóquenlo y les toca una familia
+        con su historia y su meta.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px">
+        ${GAME_DATA.cases.map((c,i)=>`
+          <button class="btn btn-gold btn-big" style="font-size:22px;padding:20px"
+                  onclick="Grupo.pickCase('${c.id}')">EQUIPO ${i+1}</button>`).join('')}
+      </div>
       ${this.rReglas()}
+    </div>`;
+  },
+
+  /* Presentación de la familia que les tocó */
+  rBriefing(){
+    const c = this.caseOf();
+    if(!c) return this.rCase();
+    return `<div class="g-section">
+      <div class="step-title">Su familia</div>
+      <div class="card case-card" style="margin-bottom:14px">
+        <h3>${c.icon} ${c.title}</h3>
+        <p>${c.story}</p>
+        <div class="meta">🎯 ${c.goalText}</div>
+        <div class="meta" style="margin-top:6px">⚖️ Perfil ${c.perfil.label}: ${c.perfil.txt}</div>
+      </div>
+      <button class="btn btn-primary btn-big" style="width:100%" onclick="Grupo.empezar()">
+        Entendido — a invertir
+      </button>
     </div>`;
   },
 
