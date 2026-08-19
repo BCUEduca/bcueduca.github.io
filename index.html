@@ -98,8 +98,9 @@
   .dot.local{background:var(--gold);box-shadow:0 0 8px var(--gold)}
 
   /* ---------- MONITOR ---------- */
-  #view-monitor{min-height:100%;display:flex;flex-direction:column;background:var(--bg)}
-  .mon-head{display:flex;align-items:baseline;gap:20px;padding:16px 26px 8px}
+  #view-monitor{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;
+                background:var(--bg)}
+  .mon-head{display:flex;align-items:baseline;gap:18px;padding:10px 20px 4px;flex:none;flex-wrap:wrap}
   .mon-head h1{font-size:clamp(18px,2.4vw,30px);letter-spacing:2px}
   .mon-head h1 .tick{color:var(--gold)}
   .mon-round{font-size:clamp(15px,1.8vw,22px);color:var(--gold);font-weight:800;letter-spacing:1px}
@@ -132,7 +133,7 @@
   .book td{padding:1px 4px;white-space:nowrap}
   .book .q{color:var(--dim);text-align:right}
   .book .bid td.p{color:var(--up)} .book .ask td.p{color:var(--down)}
-  .spark{width:100%;height:44px;min-height:34px}
+  .spark{width:100%;height:38px;min-height:26px}
   .spark polyline{fill:none;stroke:var(--blue);stroke-width:2}
   .spark .area{fill:url(#sparkfill);stroke:none}
   .mon-tape{background:#05070d;border-top:1px solid var(--line);overflow:hidden;white-space:nowrap;padding:9px 0}
@@ -241,7 +242,9 @@
                color:var(--gold);font-size:13px;line-height:1.5}
   .news-title{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;
               letter-spacing:.5px;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
-  .mon-chart{flex:1.75;display:flex;flex-direction:column;margin:8px 14px 0;
+  .mon-mid{flex:1;display:flex;gap:10px;padding:8px 14px 0;min-height:0}
+  .mon-side{width:clamp(260px,26%,400px);display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+  .mon-chart{flex:1;min-width:0;display:flex;flex-direction:column;
              background:linear-gradient(180deg,#0b1220 0%,#070b14 100%);
              border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:0}
   .mon-chart-head{display:flex;align-items:center;gap:16px;padding:8px 14px;border-bottom:1px solid var(--line);
@@ -258,13 +261,39 @@
   .mon-chart-head .hint2{color:#4a5570}
   .mon-chart-box{flex:1;min-height:0;position:relative}
   .mon-chart-box svg{width:100%;height:100%;display:block}
-  .mon-grid{flex:0 0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:8px 14px 0}
-  .mon-news{background:#05070d;border-top:1px solid var(--line);padding:12px 18px;display:flex;gap:16px;
-            align-items:center;min-height:64px}
-  .mon-news .lbl{background:var(--down);color:#fff;font-weight:800;font-size:13px;letter-spacing:1px;
-                 padding:5px 11px;border-radius:5px;white-space:nowrap}
-  .mon-news .txt{font-size:clamp(15px,1.6vw,21px);font-weight:700;line-height:1.35}
-  .mon-news .sub{color:var(--faint);font-size:clamp(11px,1.1vw,14px);font-weight:400;margin-top:3px}
+  .mon-grid{flex:0 0 auto;max-height:26vh;overflow:hidden;
+            display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:6px 14px 0}
+  .mon-side .titulo{color:var(--gold);font-size:clamp(10px,.9vw,12px);letter-spacing:1.6px;
+                    text-transform:uppercase;font-weight:800;flex:none;padding-left:2px}
+  .nt{background:linear-gradient(180deg,#0d1626 0%,#080d18 100%);border:1px solid var(--line);
+      border-left:3px solid var(--gold);border-radius:9px;padding:8px 11px;flex:1;min-height:0;overflow:hidden}
+  .nt .lbl{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:clamp(9px,.75vw,11px);
+           letter-spacing:.9px;text-transform:uppercase;margin-bottom:3px}
+  .nt h4{font-size:clamp(12px,1.05vw,16px);line-height:1.25;margin-bottom:4px;color:var(--txt)}
+  .nt p{color:var(--dim);font-size:clamp(10px,.85vw,13px);line-height:1.4;margin:0}
+  .nt.rojo{border-left-color:var(--down)}
+  .nt.verde{border-left-color:var(--up)}
+  /* podio del cierre, en el mismo panel */
+  .pod-row{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#101b2e,#0a1120);
+           border:1px solid var(--line);border-radius:9px;padding:8px 11px;flex:1;min-height:0}
+  .pod-row .m{font-size:clamp(18px,1.7vw,26px)}
+  .pod-row .nm{font-weight:800;font-size:clamp(12px,1.1vw,16px);line-height:1.2;flex:1;min-width:0;
+               overflow:hidden;text-overflow:ellipsis}
+  .pod-row .pt{font-family:var(--mono);font-weight:800;color:var(--gold);font-size:clamp(14px,1.3vw,20px)}
+  @media (max-width:900px){
+    .mon-mid{flex-direction:column}
+    .mon-side{width:auto;flex:0 0 26%}
+  }
+  /* Pantalla baja: sacrificamos el libro de órdenes antes que aparezca scroll */
+  @media (max-height:820px){
+    .mon-grid{max-height:22vh}
+    .mcard .book{display:none}
+    .mon-head{padding:7px 18px 2px}
+  }
+  @media (max-height:680px){
+    .mcard .spark{display:none}
+    .mcard .since{display:none}
+  }
   /* --- panel de puntaje --- */
   .score-hero{text-align:center;padding:16px 10px 20px}
   .score-hero .num{font-family:var(--mono);font-size:66px;font-weight:800;line-height:1}
@@ -321,14 +350,16 @@
     <div class="mon-clock"><span class="lbl">Tiempo</span><span class="cd" id="mon-clock">--:--</span></div>
   </div>
   <div class="mon-grid" id="mon-grid"></div>
-  <div class="mon-chart">
-    <div class="mon-chart-head">
-      <div class="sel" id="mon-sel"></div>
-      <div class="lg"><span class="ma"></span> Media móvil 8 · <span class="hint2">las velas verdes cerraron arriba, las rojas abajo</span></div>
+  <div class="mon-mid">
+    <div class="mon-chart">
+      <div class="mon-chart-head">
+        <div class="sel" id="mon-sel"></div>
+        <div class="lg"><span class="ma"></span> Media móvil 8 · <span class="hint2">verde cerró arriba, rojo abajo</span></div>
+      </div>
+      <div class="mon-chart-box" id="mon-chart"></div>
     </div>
-    <div class="mon-chart-box" id="mon-chart"></div>
+    <aside class="mon-side" id="mon-news"></aside>
   </div>
-  <div class="mon-news" id="mon-news"></div>
   <div class="mon-tape"><div class="tape-inner" id="mon-tape"></div></div>
   <div class="mon-controls">
     <button class="btn" onclick="Monitor.setRound(1)">R1</button>
@@ -365,7 +396,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.19-e';
+const VERSION = '2026.08.19-g';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1417,38 +1448,36 @@ const Monitor = {
     if(!box) return;
     clearInterval(this._newsTimer);
 
-    /* Cerrado el mercado, el zócalo deja de dar noticias y pasa a dar resultados */
+    /* Cerrado el mercado, el panel deja de dar noticias y pasa a dar resultados */
     if(this.round >= GAME_DATA.rounds){
       const rk = this.ranking();
       if(rk.length){
         const medalla = ['🥇','🥈','🥉'];
-        const podio = rk.slice(0,3).map((g,i)=>
-          `<span style="margin-right:22px">${medalla[i]||''} <b>${g.name}</b>
-             <span style="color:var(--gold);font-family:var(--mono)">${(g.score||0).toFixed(1).replace('.',',')} pts</span></span>`
-        ).join('');
-        box.innerHTML = `<span class="lbl" style="background:var(--gold);color:#1a1400">🏆 RESULTADO</span>
-          <div class="txt">${podio}<div class="sub">Gana quien invirtió mejor de acuerdo a su objetivo, no quien más dinero juntó</div></div>`;
+        box.innerHTML = `<div class="titulo">🏆 Resultado final</div>` +
+          rk.slice(0,3).map((g,i)=>`<div class="pod-row">
+            <span class="m">${medalla[i]||''}</span>
+            <span class="nm">${g.name}</span>
+            <span class="pt">${(g.score||0).toFixed(1).replace('.',',')}</span>
+          </div>`).join('') +
+          `<div class="nt verde" style="flex:0 0 auto"><p>Gana quien invirtió mejor de acuerdo a su
+             objetivo, no quien más dinero juntó.</p></div>`;
         return;
       }
-      // sin grupos conectados (modo autónomo): mostramos el cierre del mercado
-      box.innerHTML = `<span class="lbl" style="background:var(--gold);color:#1a1400">🔔 CIERRE</span>
-        <div class="txt">Mercado cerrado — se calculan los puntajes
-          <div class="sub">Cada grupo tiene su resultado en pantalla. Dicten su código al coordinador.</div></div>`;
+      box.innerHTML = `<div class="titulo">🔔 Cierre del mercado</div>
+        <div class="nt verde"><h4>Mercado cerrado — se calculan los puntajes</h4>
+          <p>Cada grupo tiene su resultado en pantalla. Dicten su código al coordinador para armar el podio.</p></div>`;
       return;
     }
 
     let items = (GAME_DATA.news && GAME_DATA.news[this.round]) || [];
-    if(items === 'DINAMICA') items = newsRonda3();   // el zócalo no entendía este caso: mostraba "undefined"
+    if(items === 'DINAMICA') items = newsRonda3();
     if(!items.length){ box.innerHTML = ''; return; }
-    let i = 0;
-    const pintar = () => {
-      const n = items[i % items.length];
-      box.innerHTML = `<span class="lbl">${n.tag} ${n.src}</span>
-        <div class="txt">${n.h}<div class="sub">${n.d}</div></div>`;
-      i++;
-    };
-    pintar();
-    this._newsTimer = setInterval(pintar, 9000);
+    /* En el panel lateral entran todas juntas: ya no hace falta rotarlas */
+    const color = n => /📉|💔|⚠️/.test(n.tag) ? 'rojo' : /📈|🛡️|🧺/.test(n.tag) ? 'verde' : '';
+    box.innerHTML = `<div class="titulo">📰 Noticias de la Ronda ${this.round}</div>` +
+      items.map(n=>`<div class="nt ${color(n)}">
+        <div class="lbl"><span>${n.tag}</span><span>${n.src}</span></div>
+        <h4>${n.h}</h4><p>${n.d}</p></div>`).join('');
   },
 
   setRound(r, bell){
