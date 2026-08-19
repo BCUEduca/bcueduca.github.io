@@ -396,7 +396,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.19-g';
+const VERSION = '2026.08.19-i';
 
 const GAME_DATA = {
   budget: 20000,
@@ -578,19 +578,60 @@ function banderaPartes(pais){
   }
   return '';
 }
+/* Íconos del rubro de cada activo. NO son los logos de las empresas:
+   esos son marcas registradas y no corresponde reproducirlos en un
+   material institucional. Un carrito, un chip y un botón de reproducir
+   dicen lo mismo sin apropiarse de nada ajeno. */
+function iconoPartes(id, c){
+  /* T no lleva stroke-width: cada trazo define el suyo y así no se repite
+     el atributo (el navegador ignora el segundo y el dibujo sale mal). */
+  const T = 'stroke="'+c+'" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+  switch(id){
+    case 'fund':  // el mundo entero: el fondo invierte en miles de empresas
+      return `<circle cx="12" cy="12" r="9.2" ${T} stroke-width="1.8"/>
+              <ellipse cx="12" cy="12" rx="4.3" ry="9.2" ${T} stroke-width="1.4"/>
+              <path d="M3.1 9.1h17.8M3.1 14.9h17.8" ${T} stroke-width="1.3"/>`;
+    case 'meli':  // comercio electrónico
+      return `<path d="M2.6 4.2h2.9l2.7 10.4h9.5" ${T} stroke-width="1.8"/>
+              <path d="M7.2 7.3h13.6l-1.8 5.6H8.5" ${T} stroke-width="1.8"/>
+              <circle cx="9.6" cy="18.2" r="1.7" fill="${c}"/>
+              <circle cx="17.4" cy="18.2" r="1.7" fill="${c}"/>`;
+    case 'nvda':  // semiconductores
+      return `<rect x="6.2" y="6.2" width="11.6" height="11.6" rx="2" ${T} stroke-width="1.8"/>
+              <rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1" fill="${c}"/>
+              <path d="M9.2 6.2V3.1M14.8 6.2V3.1M9.2 20.9v-3.1M14.8 20.9v-3.1M6.2 9.2H3.1M6.2 14.8H3.1M20.9 9.2h-3.1M20.9 14.8h-3.1" ${T} stroke-width="1.5"/>`;
+    case 'nflx':  // streaming
+      return `<rect x="2.6" y="4.6" width="18.8" height="14.8" rx="3" ${T} stroke-width="1.8"/>
+              <path d="M10.1 9.1l5.9 2.9-5.9 2.9z" fill="${c}"/>`;
+  }
+  return '';
+}
+
+/* Marca de un activo: bandera si es deuda de un país, ícono de rubro si no */
+function marcaPartes(a){
+  if(!a) return null;
+  if(a.pais) return {vb:'0 0 30 20', ratio:1.5, inner:banderaPartes(a.pais), borde:true};
+  const inner = iconoPartes(a.id, COLOR_ACTIVO[a.id] || '#8a93a8');
+  return inner ? {vb:'0 0 24 24', ratio:1, inner, borde:false} : null;
+}
 /* Para usar dentro de HTML */
-function banderaHTML(pais, alto){
-  const partes = banderaPartes(pais);
-  if(!partes) return '';
-  return `<svg viewBox="0 0 30 20" width="${(alto*1.5).toFixed(0)}" height="${alto}"
-    style="border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.18)">${partes}</svg>`;
+function marcaHTML(a, alto){
+  const m = marcaPartes(a);
+  if(!m) return '';
+  return `<svg viewBox="${m.vb}" width="${(alto*m.ratio).toFixed(0)}" height="${alto}"
+    style="flex:none;${m.borde?'border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.18)':''}"
+    >${m.inner}</svg>`;
 }
 /* Para usar dentro de otro SVG */
-function banderaSVG(pais, x, y, alto){
-  const partes = banderaPartes(pais);
-  if(!partes) return '';
-  return `<svg x="${x}" y="${y}" width="${(alto*1.5).toFixed(1)}" height="${alto}" viewBox="0 0 30 20"
-    preserveAspectRatio="none">${partes}</svg>`;
+function marcaSVG(a, x, y, alto){
+  const m = marcaPartes(a);
+  if(!m) return '';
+  return `<svg x="${x}" y="${y}" width="${(alto*m.ratio).toFixed(1)}" height="${alto}" viewBox="${m.vb}"
+    preserveAspectRatio="${m.borde?'none':'xMidYMid meet'}">${m.inner}</svg>`;
+}
+function marcaAncho(a, alto){
+  const m = marcaPartes(a);
+  return m ? alto * m.ratio : 0;
 }
 
 const VELAS_POR_TRAMO = 9;
@@ -1308,7 +1349,7 @@ const Monitor = {
     if(!box) return;
     box.innerHTML = GAME_DATA.assets.map(a=>
       `<button class="${a.id===this.activo?'on':''}" onclick="Monitor.verActivo('${a.id}')"
-        >${a.pais?banderaHTML(a.pais,11):''}${a.ticker}</button>`
+        >${marcaHTML(a, 12)}${a.ticker}</button>`
     ).join('');
   },
 
@@ -1393,8 +1434,8 @@ const Monitor = {
 
     /* rótulo del activo */
     /* Todo en un renglón: la descripción debajo quedaba tapada por la línea del precio */
-    const bx = a.pais ? banderaSVG(a.pais, ML+10, MT+8, 20) : '';
-    const x0 = ML + 10 + (a.pais ? 40 : 0);
+    const bx = marcaSVG(a, ML+10, MT+6, 24);
+    const x0 = ML + 10 + (marcaAncho(a, 24) ? marcaAncho(a, 24) + 11 : 0);
     const rotulo = `${bx}
       <text x="${x0}" y="${MT+26}" fill="#e8ecf5" font-size="22" font-weight="800">${a.ticker}<tspan
         dx="14" font-size="13" font-weight="400" fill="#6b788f">${a.name} · ${a.typeLabel}</tspan></text>`;
@@ -1460,7 +1501,7 @@ const Monitor = {
             <span class="pt">${(g.score||0).toFixed(1).replace('.',',')}</span>
           </div>`).join('') +
           `<div class="nt verde" style="flex:0 0 auto"><p>Gana quien invirtió mejor de acuerdo a su
-             objetivo, no quien más dinero juntó.</p></div>`;
+             objetivo, no quien más dinero logró acumular.</p></div>`;
         return;
       }
       box.innerHTML = `<div class="titulo">🔔 Cierre del mercado</div>
@@ -1501,7 +1542,7 @@ const Monitor = {
       <div class="mcard">
         <div class="head">
           <span class="tag tag-${a.type==='bond'?'bond':a.type==='fund'?'fund':'stock'}">${a.typeLabel}</span>
-          ${a.pais ? banderaHTML(a.pais, 11) : ''}
+          ${marcaHTML(a, 13)}
           <span class="name">${a.name}</span>
           <span class="tk">${a.ticker}</span>
         </div>
