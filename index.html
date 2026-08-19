@@ -320,7 +320,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.18-f';
+const VERSION = '2026.08.19-a';
 
 const GAME_DATA = {
   budget: 20000,
@@ -611,6 +611,13 @@ const SCORE_W = { meta:40, div:30, perfil:20, disc:10, bonus:5 };
 
 /* El fondo indexado ya está diversificado por dentro: cuenta como 3 activos.
    Es la forma más simple de que se entienda qué compraron. */
+/* Color de cada activo en el gráfico de torta */
+const COLOR_ACTIVO = {
+  buy33:'#4da3ff', tn2y:'#2f7fd6', fund:'#9b7bff',
+  meli:'#f5c542', nvda:'#ff8a3d', nflx:'#ff5d5d',
+  __lrm:'#22e07c', __cash:'#5a6480'
+};
+
 const FUND_EQUIV = 3;
 const DIV_TARGET = 4;      // 4 posiciones efectivas = puntaje completo
 const CASH_TOL   = 0.15;   // hasta 15% de efectivo ocioso no se penaliza
@@ -1656,7 +1663,8 @@ const Grupo = {
                         : '¡Órdenes confirmadas!'}</h2>
       <p>${waitingOpen ? 'Mientras tanto, miren el monitor de precios y conversen la estrategia.'
                        : 'Cuando suene la campana, verán qué pasó con sus inversiones.'}</p>
-      ${this.rMiniPortfolio()}
+      ${this.rObjetivo()}
+      ${this.rTorta()}
       ${st.autonomous && st.confirmed[st.round] ? (nextR===3 ? `
         <div class="card" style="max-width:420px;width:100%">
           <p style="font-size:14.5px;line-height:1.55;margin-bottom:12px">🔔 Cuando el coordinador anuncie
@@ -1669,6 +1677,85 @@ const Grupo = {
         <button class="btn btn-primary btn-big" onclick="Grupo.advanceTo(${nextR})">
           🔔 El coordinador anunció la Ronda ${nextR}
         </button>`) : ''}
+    </div>`;
+  },
+
+  /* Torta con el peso de cada activo sobre el total */
+  rTorta(){
+    const st = this.st;
+    const parts = [];
+    for(const [id,q] of Object.entries(st.pf.holdings)){
+      const a = Engine.assetById(id);
+      const v = q * Engine.price(id, st.round);
+      if(v > 0.5) parts.push({n:a.name, v, c:COLOR_ACTIVO[id]||'#7f8aa3', q});
+    }
+    parts.sort((x,y)=>y.v-x.v);
+    if(st.pf.lrm > 0.5) parts.push({n:'Letras del BCU', v:st.pf.lrm, c:COLOR_ACTIVO.__lrm});
+    if(st.pf.cash > 0.5) parts.push({n:'Efectivo sin invertir', v:st.pf.cash, c:COLOR_ACTIVO.__cash});
+    if(!parts.length) return '';
+    const total = parts.reduce((t,p)=>t+p.v,0);
+
+    let ang = -90;
+    const segs = parts.map(p=>{
+      const barrido = p.v/total*360, r=42, cx=50, cy=50;
+      if(barrido >= 359.9) return `<circle cx="50" cy="50" r="42" fill="none" stroke="${p.c}" stroke-width="15"/>`;
+      const a0=ang*Math.PI/180, a1=(ang+barrido)*Math.PI/180;
+      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
+      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+      ang += barrido;
+      return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${barrido>180?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"
+              fill="none" stroke="${p.c}" stroke-width="15"/>`;
+    }).join('');
+
+    const snap = Score.snapshot(st.pf, st.round);
+    return `<div class="card" style="width:100%;max-width:440px;text-align:left">
+      <h3 style="font-size:14px;color:var(--dim);margin-bottom:10px">SU PORTAFOLIO</h3>
+      <div class="donut-wrap">
+        <svg width="132" height="132" viewBox="0 0 100 100">${segs}
+          <text x="50" y="47" text-anchor="middle" font-size="13" font-weight="800"
+                fill="#e8ecf5" font-family="monospace">${parts.length}</text>
+          <text x="50" y="59" text-anchor="middle" font-size="7" fill="#8a93a8">posiciones</text>
+        </svg>
+        <div class="legend">${parts.map(p=>`<span><span class="sw" style="background:${p.c}"></span>
+          ${p.n}: <b class="mono">${Math.round(p.v/total*100)}%</b>
+          <span style="color:var(--faint)">${Engine.fmtUSD(p.v)}${p.q?' · '+p.q+' u.':''}</span></span>`).join('')}</div>
+      </div>
+      <p class="hint" style="margin-top:10px;border-top:1px dashed var(--line);padding-top:9px">
+        🧺 Diversificación: <b style="color:${snap.neff>=4?'var(--up)':snap.neff>=2.5?'var(--gold)':'var(--down)'}">
+        ${snap.neff.toFixed(1).replace('.',',')} posiciones efectivas</b>${snap.neff>=4
+          ? ' — ya tienen el puntaje completo de diversificación.'
+          : ' — con 4 obtienen el puntaje completo.'}</p>
+    </div>`;
+  },
+
+  /* Recordatorio del objetivo de la familia, con el avance hacia la meta */
+  rObjetivo(){
+    const st = this.st, c = this.caseOf();
+    if(!c) return '';
+    const B = GAME_DATA.budget;
+    const valor = Engine.value(st.pf, st.round);
+    const ret = (valor - B) / B;
+    const avance = Math.max(0, Math.min(1, ret / c.metaRet));
+    const falta = Math.max(0, B * (1 + c.metaRet) - valor);
+    const snap = Score.snapshot(st.pf, st.round);
+    const enBanda = snap.riskShare >= c.perfil.min && snap.riskShare <= c.perfil.max;
+    return `<div class="card" style="width:100%;max-width:440px;text-align:left;border-left:3px solid var(--gold)">
+      <h3 style="font-size:15px;color:var(--gold);margin-bottom:6px">${c.icon} ${c.title}</h3>
+      <p style="font-size:14px;line-height:1.5;color:var(--dim);margin-bottom:11px">🎯 ${c.goalText}</p>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="color:var(--faint)">Avance hacia la meta</span>
+        <b class="mono">${Math.round(avance*100)}%</b>
+      </div>
+      <div style="height:9px;background:var(--bg2);border-radius:999px;overflow:hidden">
+        <div style="height:100%;width:${Math.round(avance*100)}%;border-radius:999px;
+             background:${avance>=1?'linear-gradient(90deg,#12a35a,#22e07c)':'linear-gradient(90deg,#1d6fd1,#4da3ff)'}"></div>
+      </div>
+      <p class="hint" style="margin-top:8px">${avance>=1
+        ? '✅ Ya alcanzaron la meta de su familia. Ahora se trata de no perderla.'
+        : 'Les faltan <b>'+Engine.fmtUSD(falta)+'</b> para llegar. Todavía quedan rondas.'}</p>
+      <p class="hint" style="margin-top:7px">⚖️ Perfil ${c.perfil.label}: entre ${Math.round(c.perfil.min*100)}%
+        y ${Math.round(c.perfil.max*100)}% en acciones y fondo. Hoy tienen
+        <b style="color:${enBanda?'var(--up)':'var(--down)'}">${Math.round(snap.riskShare*100)}%</b>.</p>
     </div>`;
   },
 
