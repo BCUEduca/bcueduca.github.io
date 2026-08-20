@@ -432,7 +432,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.20-g';
+const VERSION = '2026.08.20-h';
 
 const GAME_DATA = {
   budget: 20000,
@@ -2411,11 +2411,14 @@ const Grupo = {
       <p class="hint" style="text-align:center;margin-top:6px">Este código lleva su puntaje y su resultado.
         Si no hay conexión, el coordinador lo ingresa para armar el ranking.</p>
 
-      <div class="lesson">🎓 <b>Lo que muestra el juego:</b> en la Ronda 2 cayeron todas las acciones,
-        pero en la Ronda 3 <b>sólo algunas volvieron</b>. Una nunca se recuperó: quien había puesto
-        todo ahí perdió la mitad de su dinero, y no por haber decidido mal, sino porque le tocó.
-        El fondo se llevó la suba de la ganadora sin necesidad de adivinar cuál era, y los bonos
-        pagaron sus intereses todos los años pasara lo que pasara.
+      <div class="lesson">🎓 <b>Lo que muestra el juego:</b> en la Ronda 2 cayeron todas las acciones.
+        En la Ronda 3, en cambio, <b>sólo algunas operaron al alza</b>: una recuperó todo lo perdido
+        y bastante más, otra apenas regresó a su precio de partida, y una tercera siguió cayendo
+        y nunca volvió a valer lo que costó. Quien había puesto todo ahí perdió la mitad de su
+        dinero, y no por haber decidido mal, sino porque le tocó esa y no otra.
+        El fondo indexado, al tener un pedacito de cada empresa, se llevó la suba de la ganadora
+        sin necesidad de adivinar cuál iba a ser, y los bonos pagaron sus intereses todos los años
+        pasara lo que pasara.
         <b>Diversificar no es apostar a varias: es dejar de depender de acertar.</b></div>
       ${st.pf.fees?`<div class="lesson">🧾 Pagaron <b>${Engine.fmtUSD(st.pf.fees)}</b> en comisiones
         (${(GAME_DATA.fee*100).toFixed(0)}% de cada operación, al comprar y al vender). Se cobra cada vez:
