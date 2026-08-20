@@ -101,11 +101,11 @@
   #view-monitor{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;
                 background:var(--bg)}
   .mon-head{display:flex;align-items:baseline;gap:16px;padding:9px 20px 3px;flex:none;flex-wrap:wrap}
-  .mon-head h1{font-size:clamp(22px,3.1vw,40px);letter-spacing:2.5px}
+  .mon-head h1{font-size:clamp(20px,2.7vw,34px);letter-spacing:2.2px}
   .mon-head h1 .tick{color:var(--gold)}
-  .mon-round{font-size:clamp(17px,2.2vw,29px);color:var(--gold);font-weight:800;letter-spacing:1.2px}
+  .mon-round{font-size:clamp(16px,2vw,25px);color:var(--gold);font-weight:800;letter-spacing:1.1px}
   .mon-clock{margin-left:auto;display:flex;align-items:center;gap:12px}
-  .mon-clock .lbl{color:var(--faint);font-size:clamp(11px,1.15vw,16px);letter-spacing:1.5px;text-transform:uppercase}
+  .mon-clock .lbl{color:var(--faint);font-size:clamp(10px,1.05vw,14px);letter-spacing:1.5px;text-transform:uppercase}
   .mon-clock .cd{font-family:var(--mono);font-weight:800;font-size:clamp(28px,4vw,54px);line-height:1;
                  letter-spacing:2px;color:var(--up);font-variant-numeric:tabular-nums}
   .mon-clock .cd.warn{color:var(--gold)}
@@ -347,7 +347,7 @@
   <div class="mon-head">
     <h1>BOLSA DE VALORES <span class="tick">— MONTEVIDEO</span></h1>
     <div class="mon-round" id="mon-round">RONDA 1</div>
-    <div id="mon-sala" style="font-size:clamp(12px,1.35vw,18px);letter-spacing:1.4px;color:var(--faint);
+    <div id="mon-sala" style="font-size:clamp(11px,1.2vw,15px);letter-spacing:1.3px;color:var(--faint);
          text-transform:uppercase;margin-left:18px;font-weight:700"></div>
     <div class="mon-clock"><span class="lbl">Tiempo</span><span class="cd" id="mon-clock">--:--</span></div>
   </div>
@@ -398,7 +398,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.19-k';
+const VERSION = '2026.08.19-l';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1474,7 +1474,7 @@ const Monitor = {
     const t = Math.max(0, this.timerLeft);
     const mm = String(Math.floor(t/60)).padStart(2,'0');
     const ss = String(t%60).padStart(2,'0');
-    el.textContent = t===0 ? 'TIEMPO' : (mm+':'+ss);
+    el.textContent = mm + ':' + ss;   // en cero muestra 00:00, no la palabra
     el.className = 'cd' + (t===0 ? ' done' : t<=60 ? ' crit' : t<=120 ? ' warn' : '')
                         + (this.timerOn || t===0 ? '' : ' warn');
   },
