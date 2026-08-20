@@ -157,7 +157,8 @@
   .g-section{padding:16px}
   .meta-bar{display:flex;gap:10px;flex-wrap:wrap;padding:12px 16px}
   .stat{flex:1;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
-  .stat .lbl{color:var(--dim);font-size:11.5px;letter-spacing:.6px;text-transform:uppercase}
+  .stat .lbl{color:var(--dim);font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .stat .val{font-family:var(--mono);font-size:21px;font-weight:800;margin-top:2px}
   .asset-row{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
   .asset-row .r1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -431,7 +432,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.20-e';
+const VERSION = '2026.08.20-g';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1860,6 +1861,18 @@ const Grupo = {
     }
     return c;
   },
+  /* Copia de la cartera con el borrador aplicado, sólo para mostrar números */
+  pfBorrador(){
+    const st = this.st;
+    const pf = { holdings:{...st.pf.holdings}, cash:this.draftCash(), lrm:st.pf.lrm };
+    for(const [id,d] of Object.entries(st.draft)){
+      if(!d) continue;
+      const q = (pf.holdings[id]||0) + d;
+      if(q > 0) pf.holdings[id] = q; else delete pf.holdings[id];
+    }
+    return pf;
+  },
+
   draftFees(){
     let f = 0;
     for(const [id,d] of Object.entries(this.st.draft)) f += Engine.fee(d, Engine.price(id, this.st.round));
@@ -2013,7 +2026,7 @@ const Grupo = {
     return `
     <div class="meta-bar">
       <div class="stat"><div class="lbl">Efectivo</div><div class="val mono" id="t-cash">—</div></div>
-      <div class="stat"><div class="lbl">Valor del portafolio</div><div class="val mono" id="t-value">—</div></div>
+      <div class="stat"><div class="lbl">Valor portafolio</div><div class="val mono" id="t-value">—</div></div>
       <div class="stat"><div class="lbl">Diversificación 🧺</div><div class="val mono" id="t-div">—</div></div>
       <div class="stat"><div class="lbl">Meta 🎯</div><div class="val" style="font-size:13.5px;font-family:var(--sans)">${c?c.goalText:''}</div></div>
     </div>
@@ -2076,8 +2089,14 @@ const Grupo = {
     const set = (id, txt)=>{ const e=document.getElementById(id); if(e) e.textContent = txt; };
     set('t-cash', Engine.fmtUSD(st.pf.cash));
     set('t-value', Engine.fmtUSD(Engine.value(st.pf, st.round)));
-    const snap = Score.snapshot(st.pf, st.round);
-    set('t-div', snap.neff.toFixed(1).replace('.',',') + ' / 4');
+    /* La diversificación se calcula sobre la cartera CON las órdenes que están
+       armando: si no, el número no se movía hasta confirmar y no servía de guía. */
+    const snap = Score.snapshot(this.pfBorrador(), st.round);
+    /* Es un objetivo, no un contador: pasado el 4 el puntaje ya está completo,
+       así que mostrarlo tope evita que parezca que falta o que sobra algo. */
+    const nef = Math.min(snap.neff, DIV_TARGET);
+    set('t-div', (snap.neff >= DIV_TARGET ? String(DIV_TARGET) : nef.toFixed(1).replace('.',','))
+                 + ' / ' + DIV_TARGET);
     const de = document.getElementById('t-div');
     if(de) de.style.color = snap.neff>=4 ? 'var(--up)' : snap.neff>=2.5 ? 'var(--gold)' : 'var(--down)';
     set('cb-cash', Engine.fmtUSD(cash));
