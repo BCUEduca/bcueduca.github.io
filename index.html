@@ -185,7 +185,9 @@
   .case-card .meta{margin-top:10px;background:var(--bg2);border-radius:10px;padding:10px 14px;
                    font-family:var(--mono);font-size:15px;color:var(--txt);line-height:1.5}
   .case-card .meta b{color:var(--gold)}
-  .donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+  .donut-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+  .torta{width:238px;height:auto;flex:none}
+  @media (max-width:420px){ .torta{width:208px} }
   .legend{font-size:13.5px;display:flex;flex-direction:column;gap:5px}
   .legend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px}
   .result-hero{text-align:center;padding:26px 16px}
@@ -429,7 +431,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.20-c';
+const VERSION = '2026.08.20-e';
 
 const GAME_DATA = {
   budget: 20000,
@@ -2158,26 +2160,43 @@ const Grupo = {
     if(!parts.length) return '';
     const total = parts.reduce((t,p)=>t+p.v,0);
 
+    /* La rosca va centrada en (80,80) y los porcentajes por fuera, pegados a su
+       porcion. Las porciones muy chicas no se rotulan: los numeros se pisarian
+       entre si y solo se leeria un amontonamiento. */
+    const CX = 95, CY = 80, R = 44, GRUESO = 16, R_TXT = 60, MINIMO = 0.05;
     let ang = -90;
-    const segs = parts.map(p=>{
-      const barrido = p.v/total*360, r=42, cx=50, cy=50;
-      if(barrido >= 359.9) return `<circle cx="50" cy="50" r="42" fill="none" stroke="${p.c}" stroke-width="15"/>`;
-      const a0=ang*Math.PI/180, a1=(ang+barrido)*Math.PI/180;
-      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
-      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+    let segs = '', rotulos = '';
+    parts.forEach(p=>{
+      const frac = p.v/total, barrido = frac*360;
+      if(barrido >= 359.9){
+        segs += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${p.c}" stroke-width="${GRUESO}"/>`;
+      } else {
+        const a0=ang*Math.PI/180, a1=(ang+barrido)*Math.PI/180;
+        const x0=CX+R*Math.cos(a0), y0=CY+R*Math.sin(a0);
+        const x1=CX+R*Math.cos(a1), y1=CY+R*Math.sin(a1);
+        segs += `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${R} ${R} 0 ${barrido>180?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"
+                 fill="none" stroke="${p.c}" stroke-width="${GRUESO}"/>`;
+      }
+      if(frac >= MINIMO){
+        const am = (ang + barrido/2) * Math.PI/180;
+        const cos = Math.cos(am);
+        const tx = CX + R_TXT*cos, ty = CY + R_TXT*Math.sin(am) + 3.4;
+        const anclaje = cos > 0.25 ? 'start' : cos < -0.25 ? 'end' : 'middle';
+        rotulos += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anclaje}"
+                     font-size="10.5" font-weight="800" fill="${p.c}"
+                     font-family="ui-monospace,monospace">${Math.round(frac*100)}%</text>`;
+      }
       ang += barrido;
-      return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${barrido>180?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"
-              fill="none" stroke="${p.c}" stroke-width="15"/>`;
-    }).join('');
+    });
 
     const snap = Score.snapshot(st.pf, st.round);
     return `<div class="card" style="width:100%;max-width:440px;text-align:left">
       <h3 style="font-size:14px;color:var(--dim);margin-bottom:10px">SU PORTAFOLIO</h3>
       <div class="donut-wrap">
-        <svg width="132" height="132" viewBox="0 0 100 100">${segs}
-          <text x="50" y="47" text-anchor="middle" font-size="13" font-weight="800"
-                fill="#e8ecf5" font-family="monospace">${parts.length}</text>
-          <text x="50" y="59" text-anchor="middle" font-size="7" fill="#8a93a8">posiciones</text>
+        <svg class="torta" viewBox="0 0 190 160">${segs}${rotulos}
+          <text x="${CX}" y="${CY-3}" text-anchor="middle" font-size="19" font-weight="800"
+                fill="#e8ecf5" font-family="ui-monospace,monospace">${parts.length}</text>
+          <text x="${CX}" y="${CY+12}" text-anchor="middle" font-size="9" fill="#8a93a8">posiciones</text>
         </svg>
         <div class="legend">${parts.map(p=>`<span><span class="sw" style="background:${p.c}"></span>
           ${p.n}: <b class="mono">${Math.round(p.v/total*100)}%</b>
@@ -2278,7 +2297,7 @@ const Grupo = {
       }).join('')}
       ${(acc.coupons||acc.lrmInt)?`<div class="lesson">💰 <b>Cobraron rentas:</b>
         ${acc.coupons?('cupones de bonos por <b>'+Engine.fmtUSD(acc.coupons)+'</b>. '):''}
-        ${acc.lrmInt?('intereses de las Letras por <b>'+Engine.fmtUSD(acc.lrmInt)+'</b>. '):''}
+        ${acc.lrmInt?((acc.coupons?'I':'i')+'ntereses de las Letras por <b>'+Engine.fmtUSD(acc.lrmInt)+'</b>. '):''}
         Ya están acreditados en su efectivo: pueden reinvertirlos.</div>`:''}
       <h2 class="sec">📰 Noticias del mercado</h2>
       ${renderNews(st.round, false)}
