@@ -432,7 +432,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.20-h';
+const VERSION = '2026.08.21-a';
 
 const GAME_DATA = {
   budget: 20000,
@@ -533,12 +533,12 @@ const GAME_DATA = {
   },
   cases: [
     {
-      id:'jubilacion', icon:'👴', title:'La jubilación del abuelo',
-      story:'Un integrante de la familia está por jubilarse. Entre la jubilación que va a cobrar y los gastos que planificó, le van a faltar unos USD 600 por año para vivir como quiere. Tiene USD 20.000 ahorrados y decidió invertirlos en la Bolsa.',
-      goalText:'Ganar al menos USD 2.400 en 4 años sin arriesgar demasiado el capital.',
+      id:'auto', icon:'🚗', title:'Mi primer auto',
+      story:'Quieren comprarse su primer auto dentro de 4 años, cuando terminen de estudiar. Entre lo que vienen ahorrando y una ayuda de la familia ya juntaron USD 20.000, pero el auto que les gusta cuesta USD 22.400 y no quieren pedir un préstamo. Deciden invertir ese dinero en la Bolsa mientras tanto.',
+      goalText:'Ganar al menos USD 2.400 en 4 años para llegar al precio del auto sin pedir préstamo.',
       metaRet:0.12, protegeCapital:true,
       perfil:{min:0.10, max:0.40, label:'conservador',
-              txt:'Como el abuelo va a necesitar el dinero pronto, entre el 10% y el 40% del portafolio debería estar en activos de riesgo (acciones y fondo). El resto, en bonos y Letras.'}
+              txt:'La fecha de la compra ya está puesta y no se puede correr, así que no conviene arriesgar de más: entre el 10% y el 40% del portafolio en activos de riesgo (acciones y fondo). El resto, en bonos y Letras.'}
     },
     {
       id:'vivienda', icon:'🏠', title:'La primera vivienda',
@@ -1312,7 +1312,7 @@ function newsRonda3(){
       clave:'La diversificación no adivina cuál va a ganar: se asegura de tener un pedazo de la que gane.' },
     { tag:'🇺🇾', src:'Deuda soberana', h:'El bono uruguayo 2033 llega a su valor nominal',
       d:'Cierra en 100 tras pagar tres cupones anuales de 5,1%. Quien lo compró a 98,5 y lo mantuvo cobró los intereses y además recuperó la diferencia de precio.',
-      clave:'Riesgo bajo, retorno bajo pero previsible: exactamente lo que necesitaba la familia del abuelo.' }
+      clave:'Riesgo bajo, retorno bajo pero previsible: exactamente lo que necesitaba el equipo que ahorra para el auto.' }
   ];
 }
 
