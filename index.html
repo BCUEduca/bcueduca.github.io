@@ -432,7 +432,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.21-b';
+const VERSION = '2026.08.21-d';
 
 const GAME_DATA = {
   budget: 20000,
@@ -908,7 +908,9 @@ const SCORE_W = { meta:40, div:30, perfil:20, disc:10, bonus:5 };
    Es la forma más simple de que se entienda qué compraron. */
 /* Color de cada activo en el gráfico de torta */
 const COLOR_ACTIVO = {
-  buy33:'#4da3ff', tn2y:'#2f7fd6', fund:'#9b7bff',
+  buy33:'#4da3ff',   // bono uruguayo: azul
+  tn2y:'#14c8d4',    // treasury: turquesa, contrasta con el uruguayo y no sugiere pérdida
+  fund:'#9b7bff',
   meli:'#f5c542', nvda:'#ff8a3d', nflx:'#ff5d5d',
   __lrm:'#22e07c', __cash:'#5a6480'
 };
