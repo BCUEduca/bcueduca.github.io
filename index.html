@@ -157,6 +157,10 @@
   .g-section{padding:16px}
   .meta-bar{display:flex;gap:10px;flex-wrap:wrap;padding:12px 16px}
   .stat{flex:1;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .mandato{display:flex;gap:9px;align-items:flex-start;background:var(--bg2);border:1px dashed var(--line);
+           border-left:3px solid var(--gold);border-radius:10px;padding:9px 12px;margin-bottom:12px;
+           font-size:14px;line-height:1.45;color:var(--dim)}
+  .mandato .ico{font-size:16px;line-height:1.3}
   .stat .lbl{color:var(--dim);font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;
              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .stat .val{font-family:var(--mono);font-size:21px;font-weight:800;margin-top:2px}
@@ -432,7 +436,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.21-d';
+const VERSION = '2026.08.21-f';
 
 const GAME_DATA = {
   budget: 20000,
@@ -909,7 +913,7 @@ const SCORE_W = { meta:40, div:30, perfil:20, disc:10, bonus:5 };
 /* Color de cada activo en el gráfico de torta */
 const COLOR_ACTIVO = {
   buy33:'#4da3ff',   // bono uruguayo: azul
-  tn2y:'#14c8d4',    // treasury: turquesa, contrasta con el uruguayo y no sugiere pérdida
+  tn2y:'#e24ec4',    // treasury: fucsia, el único tono libre entre los demás activos
   fund:'#9b7bff',
   meli:'#f5c542', nvda:'#ff8a3d', nflx:'#ff5d5d',
   __lrm:'#22e07c', __cash:'#5a6480'
@@ -2038,6 +2042,11 @@ const Grupo = {
       <p class="step-sub">${isR2
         ? 'Los precios cambiaron. Pueden vender activos (botón −) para recuperar efectivo y comprar otros (botón +).'
         : 'Compren activos con sus USD '+Engine.fmt(GAME_DATA.budget)+'. Piensen en el riesgo de cada uno… y no pongan todos los huevos en la misma canasta.'}</p>
+      ${c?`<div class="mandato" id="t-mandato">
+        <span class="ico">⚖️</span>
+        <span>Perfil <b>${c.perfil.label}</b>: entre <b>${Math.round(c.perfil.min*100)}%</b> y
+          <b>${Math.round(c.perfil.max*100)}%</b> del portafolio en acciones y fondo.
+          Con estas órdenes van <b id="t-riesgo">—</b>.</span></div>`:''}
       <details ${st.round===1?'open':''} style="margin-bottom:12px">
         <summary style="cursor:pointer;color:var(--gold);font-weight:800;font-size:14px;
                         letter-spacing:.5px;padding:10px 0">📰 Noticias del mercado</summary>
@@ -2078,7 +2087,7 @@ const Grupo = {
     </div>
     <div class="cashbar"><div class="inner">
       <div><div class="c-lbl">EFECTIVO DISPONIBLE</div><div class="c-val mono" id="cb-cash">—</div></div>
-      <div style="margin-left:auto;text-align:right"><div class="c-lbl">COSTO DE LAS ÓRDENES</div>
+      <div style="margin-left:auto;text-align:right"><div class="c-lbl" id="cb-lbl">INVERSIÓN</div>
         <div class="c-val mono" id="cb-cost">—</div>
         <div class="c-lbl" id="cb-fee" style="color:var(--gold)"></div></div>
     </div></div>`;
@@ -2099,12 +2108,23 @@ const Grupo = {
     const nef = Math.min(snap.neff, DIV_TARGET);
     set('t-div', (snap.neff >= DIV_TARGET ? String(DIV_TARGET) : nef.toFixed(1).replace('.',','))
                  + ' / ' + DIV_TARGET);
+    const c = this.caseOf();
+    const re = document.getElementById('t-riesgo');
+    if(re && c){
+      const pctRiesgo = Math.round(snap.riskShare*100);
+      const dentro = snap.riskShare >= c.perfil.min && snap.riskShare <= c.perfil.max;
+      re.textContent = pctRiesgo + '%';
+      re.style.color = dentro ? 'var(--up)' : 'var(--down)';
+    }
     const de = document.getElementById('t-div');
     if(de) de.style.color = snap.neff>=4 ? 'var(--up)' : snap.neff>=2.5 ? 'var(--gold)' : 'var(--down)';
     set('cb-cash', Engine.fmtUSD(cash));
     set('cb-cost', (cost>=0?'−':'+') + ' ' + Engine.fmtUSD(Math.abs(cost)).replace('USD ','USD '));
     const fees = this.draftFees();
-    set('cb-fee', fees>0 ? Engine.fmtUSD(fees) + ' de comisión' : '');
+    /* Vendiendo, el número es dinero que entra: llamarlo "inversión" confundiría. */
+    const bruto = this.draftCost();
+    set('cb-lbl', bruto < -0.5 ? 'DINERO QUE ENTRA' : 'INVERSIÓN');
+    set('cb-fee', fees>0 ? 'incluye ' + Engine.fmtUSD(fees) + ' de comisión' : '');
     const cb = document.getElementById('cb-cash');
     if(cb) cb.classList.toggle('warn', cash < 0);
     for(const a of GAME_DATA.assets){
@@ -2448,22 +2468,36 @@ const Grupo = {
     if(st.pf.cash>0.5) parts.push({n:'Efectivo', v:st.pf.cash, c:'#5a6480'});
     if(!parts.length) return '';
     const total = parts.reduce((s,p)=>s+p.v,0);
+    /* Mismo criterio que la torta por activo: el porcentaje va afuera,
+       pegado a su porción, y las porciones muy chicas sólo van en la leyenda. */
+    const CX = 95, CY = 80, R = 44, GRUESO = 16, R_TXT = 60, MINIMO = 0.05;
     let angle = -90;
-    const segs = parts.map(p=>{
-      const sweep = p.v/total*360;
-      const large = sweep>180?1:0;
-      const r=42, cx=50, cy=50;
-      const a0 = angle*Math.PI/180, a1 = (angle+sweep)*Math.PI/180;
-      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
-      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+    let segs = '', rotulos = '';
+    parts.forEach(p=>{
+      const frac = p.v/total, sweep = frac*360;
+      if(sweep >= 359.9){
+        segs += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${p.c}" stroke-width="${GRUESO}"/>`;
+      } else {
+        const a0 = angle*Math.PI/180, a1 = (angle+sweep)*Math.PI/180;
+        const x0=CX+R*Math.cos(a0), y0=CY+R*Math.sin(a0);
+        const x1=CX+R*Math.cos(a1), y1=CY+R*Math.sin(a1);
+        segs += `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${R} ${R} 0 ${sweep>180?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"
+                 fill="none" stroke="${p.c}" stroke-width="${GRUESO}"/>`;
+      }
+      if(frac >= MINIMO){
+        const am = (angle + sweep/2) * Math.PI/180;
+        const cos = Math.cos(am);
+        const tx = CX + R_TXT*cos, ty = CY + R_TXT*Math.sin(am) + 3.4;
+        const anclaje = cos > 0.25 ? 'start' : cos < -0.25 ? 'end' : 'middle';
+        rotulos += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anclaje}"
+                     font-size="10.5" font-weight="800" fill="${p.c}"
+                     font-family="ui-monospace,monospace">${Math.round(frac*100)}%</text>`;
+      }
       angle += sweep;
-      if(sweep>=359.9) return `<circle cx="50" cy="50" r="42" fill="none" stroke="${p.c}" stroke-width="15"/>`;
-      return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"
-              fill="none" stroke="${p.c}" stroke-width="15"/>`;
-    }).join('');
+    });
     return `<div class="card"><h3 style="font-size:14px;color:var(--dim);margin-bottom:10px">COMPOSICIÓN FINAL</h3>
       <div class="donut-wrap">
-        <svg width="130" height="130" viewBox="0 0 100 100">${segs}</svg>
+        <svg class="torta" viewBox="0 0 190 160">${segs}${rotulos}</svg>
         <div class="legend">${parts.map(p=>`<span><span class="sw" style="background:${p.c}"></span>
           ${p.n}: <b class="mono">${Math.round(p.v/total*100)}%</b> (${Engine.fmtUSD(p.v)})</span>`).join('')}</div>
       </div></div>`;
