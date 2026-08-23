@@ -436,7 +436,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.21-i';
+const VERSION = '2026.08.21-j';
 
 const GAME_DATA = {
   budget: 20000,
@@ -2120,7 +2120,7 @@ const Grupo = {
     const de = document.getElementById('t-div');
     if(de) de.style.color = snap.neff>=4 ? 'var(--up)' : snap.neff>=2.5 ? 'var(--gold)' : 'var(--down)';
     set('cb-cash', Engine.fmtUSD(cash));
-    set('cb-cost', (cost>=0?'−':'+') + ' ' + Engine.fmtUSD(Math.abs(cost)).replace('USD ','USD '));
+    set('cb-cost', Engine.fmtUSD(Math.abs(cost)));
     const fees = this.draftFees();
     /* Vendiendo, el número es dinero que entra: llamarlo "inversión" confundiría. */
     const bruto = this.draftCost();
@@ -2133,8 +2133,10 @@ const Grupo = {
       const px = Engine.price(a.id, st.round);
       const inp = document.getElementById('d-'+a.id);
       if(inp && document.activeElement!==inp) inp.value = d;
-      const lbl = d>0 ? `Compran ${d} × ${px.toFixed(2).replace('.',',')} = −${Engine.fmtUSD(d*px)} (+ ${Engine.fmtUSD(Engine.fee(d,px))} de comisión)`
-                : d<0 ? `Venden ${-d} × ${px.toFixed(2).replace('.',',')} = +${Engine.fmtUSD(-d*px)} (− ${Engine.fmtUSD(Engine.fee(d,px))} de comisión)`
+      /* Sin signo: ya lo dice "Compran" o "Venden". El signo del renglón de la
+         comisión sí se mantiene, porque ahí suma o resta según el caso. */
+      const lbl = d>0 ? `Compran ${d} × ${px.toFixed(2).replace('.',',')} = ${Engine.fmtUSD(d*px)} (+ ${Engine.fmtUSD(Engine.fee(d,px))} de comisión)`
+                : d<0 ? `Venden ${-d} × ${px.toFixed(2).replace('.',',')} = ${Engine.fmtUSD(-d*px)} (− ${Engine.fmtUSD(Engine.fee(d,px))} de comisión)`
                 : '';
       set('c-'+a.id, lbl);
     }
