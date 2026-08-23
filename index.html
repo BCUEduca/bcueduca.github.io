@@ -436,7 +436,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.21-j';
+const VERSION = '2026.08.21-k';
 
 const GAME_DATA = {
   budget: 20000,
@@ -977,8 +977,8 @@ const Score = {
     const meta = SCORE_W.meta * metaFrac;
 
     /* --- 30 · DIVERSIFICACIÓN --- */
-    const divFracs = snaps.map(s => this.clamp((s.neff - 1) / (DIV_TARGET - 1)));
-    const divFrac = divFracs.reduce((a,b)=>a+b, 0) / divFracs.length;
+    const neffProm = snaps.reduce((a,s)=>a+s.neff, 0) / snaps.length;
+    const divFrac = this.clamp((neffProm - 1) / (DIV_TARGET - 1));
     const div = SCORE_W.div * divFrac;
 
     /* --- 20 · PERFIL DE RIESGO --- */
@@ -2381,8 +2381,12 @@ const Grupo = {
                : 'linear-gradient(90deg,#a03030,#ff5d5d)';
     const bar = (ico, lbl, got, max, hint) => {
       const f = max>0 ? got/max : 0;
+      /* Si el puntaje es redondo no tiene sentido el decimal: queda 20 / 20 */
+      const n = Math.abs(got - Math.round(got)) < 0.05
+              ? String(Math.round(got))
+              : got.toFixed(1).replace('.',',');
       return `<div class="sbar">
-        <div class="sb-l"><span>${ico} ${lbl}</span><b>${got.toFixed(1).replace('.',',')} / ${max}</b></div>
+        <div class="sb-l"><span>${ico} ${lbl}</span><b>${n} / ${max}</b></div>
         <div class="sb-t"><i style="width:${Math.round(Math.min(1,f)*100)}%;background:${col(f)}"></i></div>
         <p class="sb-h">${hint}</p></div>`;
     };
@@ -2397,8 +2401,10 @@ const Grupo = {
             sc.rompioCapital ? 'La familia se comprometió a no perder capital y terminaron por debajo de USD 20.000.'
             : 'Meta de la familia: ' + Engine.pct(c?c.metaRet:0.18,0) + '. Ustedes lograron ' + Engine.pct(sc.ret) + '.')}
       ${bar('🧺','Diversificación', sc.div, SCORE_W.div,
-            'Tuvieron el equivalente a ' + sc.neff.toFixed(1).replace('.',',') +
-            ' posiciones distintas en promedio. Con 4 o más se obtiene el puntaje completo.')}
+            'Tuvieron el equivalente a <b>' + sc.neff.toFixed(1).replace('.',',') +
+            ' posiciones</b>, promediando las tres rondas. No alcanza con comprar un poco de todo: ' +
+            'si casi todo el dinero queda en uno o dos activos, el resto pesa muy poco y cuenta como ' +
+            'menos posiciones. Con 4 o más se obtiene el puntaje completo.')}
       ${bar('⚖️','Perfil de riesgo', sc.perfil, SCORE_W.perfil,
             'Esta familia necesitaba entre ' + Math.round(sc.band.min*100) + '% y ' + Math.round(sc.band.max*100) +
             '% en acciones y fondo. Terminaron con ' + Math.round(sc.riskShare*100) + '%.')}
