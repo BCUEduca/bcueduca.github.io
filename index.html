@@ -436,7 +436,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.21-f';
+const VERSION = '2026.08.21-g';
 
 const GAME_DATA = {
   budget: 20000,
@@ -2004,15 +2004,16 @@ const Grupo = {
     return `<div class="card" style="margin-top:6px">
       <h3 style="font-size:15px;margin-bottom:10px">🏆 Cómo se gana esta competencia</h3>
       <p class="sub" style="font-family:var(--sans);margin-bottom:10px">No gana quien más dinero tiene
-        al final del juego, sino quien invierte <b>mejor, de acuerdo a su objetivo</b>. El puntaje es sobre 100:</p>
+        al final del juego, sino quien invierte <b>mejor, de acuerdo a su objetivo</b>.
+        El puntaje es sobre <b>100 puntos</b>, repartidos así:</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse;line-height:1.5">
-        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">40</td>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 10px 3px 0;white-space:nowrap;font-weight:800">40%</td>
             <td><b>Meta cumplida</b> — llegar a la meta de tu familia. Pasarse casi no suma.</td></tr>
-        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">30</td>
-            <td><b>Diversificación</b> — no poner todo en un solo activo. Se mide en las dos rondas.</td></tr>
-        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">20</td>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 10px 3px 0;white-space:nowrap;font-weight:800">30%</td>
+            <td><b>Diversificación</b> — no poner todo en un solo activo. Se mide en las tres rondas.</td></tr>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 10px 3px 0;white-space:nowrap;font-weight:800">20%</td>
             <td><b>Perfil de riesgo</b> — que el riesgo sea el que esa familia puede tolerar.</td></tr>
-        <tr><td class="mono" style="color:var(--gold);padding:3px 8px 3px 0">10</td>
+        <tr><td class="mono" style="color:var(--gold);padding:3px 10px 3px 0;white-space:nowrap;font-weight:800">10%</td>
             <td><b>Disciplina</b> — no vender con pérdida y no dejar dinero quieto.</td></tr>
       </table>
       <p class="hint" style="margin-top:10px">El Fondo Indexado cuenta como 3 activos, porque adentro
