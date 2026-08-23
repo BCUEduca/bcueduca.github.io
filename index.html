@@ -446,7 +446,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.23-a';
+const VERSION = '2026.08.23-b';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1126,14 +1126,31 @@ const Sync = {
   async _initFirebase(){
     if(!window.firebase){
       await this._loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+      await this._loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js');
       await this._loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js');
     }
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+
+    /* Identificación anónima: le da a cada dispositivo una credencial invisible,
+       sin usuario ni contraseña. Nadie escribe nada ni nota nada, pero permite
+       que las reglas de la base exijan estar identificado.
+       Si falla, no abortamos acá: más abajo probamos si igual se puede leer. */
+    this.uid = null;
+    try{
+      await Promise.race([
+        firebase.auth().signInAnonymously(),
+        new Promise((_,rj)=>setTimeout(()=>rj(new Error('tardó demasiado')), 6000))
+      ]);
+      this.uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    }catch(e){
+      console.warn('Sin identificación anónima:', e && e.message);
+    }
+
     this._db = firebase.database();
 
-    /* Verificamos que la base responda ANTES de darnos por conectados.
-       Sin esto, una configuración mal copiada deja la app creyendo que está
-       en línea y no cae nunca al modo local: el error original de esta app. */
+    /* Dos comprobaciones antes de darnos por conectados. Sin esto, una
+       configuración mal copiada o unas reglas que nos rechazan dejan la app
+       creyendo que está en línea y no cae nunca al modo local. */
     await new Promise((res, rej)=>{
       const t = setTimeout(()=>{ ref.off(); rej(new Error('la base no respondió')); }, 8000);
       const ref = this._db.ref('.info/connected');
@@ -1143,6 +1160,16 @@ const Sync = {
     });
 
     const base = 'sesiones/'+this.code;
+
+    /* La segunda: leer de verdad la sala. Si las reglas nos rechazan
+       —por ejemplo porque falta habilitar el acceso anónimo— esto falla
+       y el juego se va al modo local en vez de quedarse mudo. */
+    await new Promise((res, rej)=>{
+      const t = setTimeout(()=>rej(new Error('la sala no respondió')), 8000);
+      this._db.ref(base+'/state').once('value')
+        .then(()=>{ clearTimeout(t); res(); })
+        .catch(e=>{ clearTimeout(t); rej(new Error('la base rechazó el acceso: '+(e&&e.code||e.message))); });
+    });
     this._db.ref(base+'/state').on('value', s=>{
       const v = s.val(); if(v && this._cbState) this._cbState(v);
     });
