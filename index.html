@@ -150,13 +150,18 @@
   .mon-controls:hover{opacity:1}
 
   /* bell overlay */
+  /* text-align y padding: sin esto el título largo se hacía más ancho que la
+     pantalla del celular y quedaba pegado al borde izquierdo, cortado. */
   #bell-overlay{position:fixed;inset:0;background:rgba(4,6,12,.88);display:flex;flex-direction:column;
-                align-items:center;justify-content:center;gap:16px;z-index:100;backdrop-filter:blur(4px)}
-  #bell-overlay .bell{font-size:110px;animation:ring 1s ease infinite}
+                align-items:center;justify-content:center;gap:14px;z-index:100;backdrop-filter:blur(4px);
+                padding:24px;text-align:center}
+  #bell-overlay .bell{font-size:clamp(64px,16vw,110px);animation:ring 1s ease infinite;line-height:1}
   @keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(18deg)}40%{transform:rotate(-14deg)}
                   60%{transform:rotate(9deg)}80%{transform:rotate(-5deg)}}
-  #bell-overlay h2{font-size:clamp(26px,4vw,46px);letter-spacing:2px;color:var(--gold)}
-  #bell-overlay p{color:var(--dim);font-size:18px}
+  #bell-overlay h2{font-size:clamp(22px,5.5vw,46px);letter-spacing:1.5px;color:var(--gold);
+                   line-height:1.2;max-width:100%;text-wrap:balance}
+  #bell-overlay p{color:var(--dim);font-size:clamp(14px,3.6vw,18px);line-height:1.4;
+                  max-width:34ch;margin:0 auto}
 
   /* ---------- GRUPO ---------- */
   #view-grupo{max-width:680px;margin:0 auto;padding-bottom:90px}
@@ -446,7 +451,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.23-b';
+const VERSION = '2026.08.23-d';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1838,7 +1843,7 @@ const Grupo = {
       score: Math.round(sc.total*10)/10, neff: Math.round(sc.neff*10)/10,
       parts: {meta:Math.round(sc.meta), div:Math.round(sc.div),
               perfil:Math.round(sc.perfil), disc:Math.round(sc.disc), bonus:Math.round(sc.bonus)},
-      done: !!st.confirmed[st.round], ts: Date.now()
+      done: !!st.confirmed[st.round] || st.step === 'final', ts: Date.now()
     };
   },
   broadcast(){ if(!this.st.autonomous && Sync.mode!=='off') Sync.sendGroup(this.publicGroup()); },
@@ -2727,11 +2732,13 @@ const Coord = {
             ${groups.map(g=>{
               const ret = g.value/GAME_DATA.budget - 1;
               const c = GAME_DATA.cases.find(c=>c.id===g.caseId);
-              const target = GAME_DATA.budget*(1+(c?c.goalPct:0));
+              const target = GAME_DATA.budget*(1+(c?c.metaRet:0));
               const sem = g.value>=target?'g':g.value>=GAME_DATA.budget?'y':'r';
               return `<tr>
                 <td>${this.caseIcon(g.caseId)}</td>
-                <td><b>${g.name}</b> ${g.done?'✔':'<span style="color:var(--faint)">operando…</span>'}</td>
+                <td><b>${g.name}</b> ${g.done
+                  ? '<span style="color:var(--up)">✔ '+(g.round>=GAME_DATA.rounds?'terminó':'listo')+'</span>'
+                  : '<span style="color:var(--faint)">operando…</span>'}</td>
                 <td class="mono">${g.round}</td>
                 <td class="mono" style="color:${(g.neff||1)>=4?'var(--up)':(g.neff||1)>=2.5?'var(--gold)':'var(--down)'}">${(g.neff||1).toFixed(1).replace('.',',')}</td>
                 <td class="mono">${Engine.fmtUSD(g.value)} <span class="chg ${ret>=0?'up':'down'}" style="font-size:12px">${Engine.pct(ret)}</span></td>
