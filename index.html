@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>La Bolsa de Valores — Dinámica de Educación Financiera</title>
+<!-- No queremos que la actividad aparezca en buscadores: se llega sólo con el link.
+     No es una protección de acceso, sólo evita el hallazgo casual. -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="author" content="BCU Educa">
+<meta name="description" content="Dinámica de educación financiera de BCU Educa.">
 <style>
   :root{
     --bg:#0a0e17; --bg2:#0f1524; --panel:#141b2e; --panel2:#1a2340;
@@ -375,6 +381,8 @@
   <p class="conn-note" id="home-conn"></p>
   <p class="conn-note" style="opacity:.65;margin-top:2px">
     versión <b class="mono" id="home-ver">—</b> · base de datos <b id="home-db">—</b></p>
+  <p class="conn-note" style="opacity:.8;margin-top:10px;letter-spacing:.4px">
+    Propiedad de <b style="color:var(--gold)">BCU&nbsp;Educa</b> · &copy; 2026</p>
 </div>
 
 <!-- ============ MONITOR ============ -->
@@ -401,6 +409,8 @@
     </aside>
   </div>
   <div class="mon-tape"><div class="tape-inner" id="mon-tape"></div></div>
+  <div style="text-align:center;padding:3px 0 5px;font-size:11px;letter-spacing:.6px;color:#3d465c">
+    Propiedad de BCU Educa · &copy; 2026</div>
   <div class="mon-controls">
     <button class="btn" onclick="Monitor.setRound(1)">R1</button>
     <button class="btn" onclick="Monitor.setRound(2)">R2</button>
@@ -436,7 +446,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.21-k';
+const VERSION = '2026.08.23-a';
 
 const GAME_DATA = {
   budget: 20000,

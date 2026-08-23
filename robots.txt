@@ -1,0 +1,6 @@
+# La Bolsa de Valores — BCU Educa
+# Actividad educativa de uso interno: se accede por enlace directo,
+# no queremos que aparezca en resultados de búsqueda.
+
+User-agent: *
+Disallow: /
