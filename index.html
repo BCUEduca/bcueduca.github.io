@@ -465,7 +465,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.23-e';
+const VERSION = '2026.08.26-a';
 
 const GAME_DATA = {
   budget: 20000,
@@ -532,7 +532,7 @@ const GAME_DATA = {
         h:'El BCU coloca Letras de Regulación Monetaria a un año con 9% de interés',
         d:'El instrumento es en pesos uruguayos. Quien le presta dinero al Banco Central sabe desde el primer día exactamente cuánto va a cobrar al vencimiento.',
         clave:'Acá aparece la idea de retorno conocido de antemano, en contraste con la acción, cuyo precio nadie puede prometer.' },
-      { tag:'🧾', src:'Cómo se opera', h:'Comprar en la Bolsa tiene un costo: la comisión del corredor',
+      { tag:'💸', src:'Cómo se opera', h:'Comprar en la Bolsa tiene un costo: la comisión del corredor',
         d:'Las órdenes no se dan solas: se dan a través de un corredor de bolsa, que cobra un 1% cada vez que se compra y también cada vez que se vende. Si compran USD 1.000 de una acción pagan USD 10, y si después la venden por USD 1.000 pagan otros USD 10.',
         clave:'Se cobra en los dos sentidos: arrepentirse cuesta caro. Es el freno para el que quiere comprar y vender por impulso.' },
       { tag:'🇺🇾', src:'Deuda soberana',
@@ -556,7 +556,7 @@ const GAME_DATA = {
       { tag:'😴', src:'Mercados', h:'Año tranquilo: los precios casi no se movieron',
         d:'Sin sobresaltos ni grandes noticias, las cotizaciones cerraron el año prácticamente donde lo empezaron. Los que cobraron cupones e intereses ganaron igual.',
         clave:'La mayoría de los años de la Bolsa se parecen más a este que a los dos anteriores. Las crisis y los rebotes son la excepción, no la regla.' },
-      { tag:'🧾', src:'Cómo se opera', h:'Operar en un mercado quieto sólo deja comisiones',
+      { tag:'💸', src:'Cómo se opera', h:'Operar en un mercado quieto sólo deja comisiones',
         d:'Comprar y vender cuando los precios no se mueven no cambia el resultado, pero cada operación paga su 1% al corredor.',
         clave:'Si algún grupo operó mucho en la Ronda 3, mirá su línea de comisiones en el resultado final. Es el ejemplo perfecto de movimiento que costó plata sin cambiar nada.' },
       { tag:'🇺🇾', src:'Deuda soberana', h:'El bono 2033 cierra en su valor nominal tras pagar su último cupón',
@@ -1054,11 +1054,11 @@ const Score = {
       f.push({ico:'🎯', txt:'Se quedaron a mitad de camino de la meta. No es un fracaso: en la vida real se ajusta el plazo o el aporte mensual.'});
 
     if(sc.divFrac >= 0.9)
-      f.push({ico:'🧺', txt:'Repartieron bien el riesgo: tuvieron el equivalente a ' + sc.neff.toFixed(1).replace('.',',') + ' posiciones distintas. Ningún tropiezo individual los hundía.'});
+      f.push({ico:'📊', txt:'Repartieron bien el riesgo: tuvieron el equivalente a ' + sc.neff.toFixed(1).replace('.',',') + ' posiciones distintas. Ningún tropiezo individual los hundía.'});
     else if(sc.divFrac >= 0.4)
-      f.push({ico:'🧺', txt:'Diversificaron a medias (' + sc.neff.toFixed(1).replace('.',',') + ' posiciones efectivas). Con dos o tres activos más el resultado dependía menos de la suerte.'});
+      f.push({ico:'📊', txt:'Diversificaron a medias (' + sc.neff.toFixed(1).replace('.',',') + ' posiciones efectivas). Con dos o tres activos más el resultado dependía menos de la suerte.'});
     else
-      f.push({ico:'🥚', txt:'Pusieron casi todos los huevos en la misma canasta (' + sc.neff.toFixed(1).replace('.',',') + ' posiciones efectivas). Esta vez pudo salir bien, pero es una apuesta, no una inversión.'});
+      f.push({ico:'🎲', txt:'Pusieron casi todos los huevos en la misma canasta (' + sc.neff.toFixed(1).replace('.',',') + ' posiciones efectivas). Esta vez pudo salir bien, pero es una apuesta, no una inversión.'});
 
     const b = sc.band;
     if(sc.perfilFrac >= 0.9)
@@ -1071,7 +1071,7 @@ const Score = {
     if(sc.loss > 0)
       f.push({ico:'😰', txt:'Vendieron con pérdida por ' + Engine.fmtUSD(sc.loss) + '. Vender cuando todo cae convierte una caída pasajera en una pérdida definitiva.'});
     if(sc.fees > 0.03 * GAME_DATA.budget)
-      f.push({ico:'🧾', txt:'Se les fueron ' + Engine.fmtUSD(sc.fees) + ' en comisiones por operar de más. Cada compra y cada venta paga ' + (GAME_DATA.fee*100).toFixed(0) + '%, así que cambiar de idea se cobra dos veces.'});
+      f.push({ico:'💸', txt:'Se les fueron ' + Engine.fmtUSD(sc.fees) + ' en comisiones por operar de más. Cada compra y cada venta paga ' + (GAME_DATA.fee*100).toFixed(0) + '%, así que cambiar de idea se cobra dos veces.'});
     if(sc.avgCash > CASH_TOL)
       f.push({ico:'💤', txt:'Dejaron en promedio ' + Math.round(sc.avgCash*100) + '% en efectivo quieto. El dinero en el bolsillo no rinde: para eso están las Letras.'});
     return f;
@@ -1367,7 +1367,7 @@ function newsRonda3(){
       d:`La empresa perdió terreno frente a sus competidores y los analistas ya no esperan que
          vuelva a los valores previos. Quien compró y mantuvo perdió la mitad de lo invertido en ella.`,
       clave:'Acá aparece la pérdida permanente, que en la versión anterior del juego no existía. No toda caída se recupera: por eso no se apuesta todo a una sola empresa.' },
-    { tag:'🧺', src:'Fondos', h:'El fondo indexado cerró en positivo pese a todo',
+    { tag:'📊', src:'Fondos', h:'El fondo indexado cerró en positivo pese a todo',
       d:`Como invierte en miles de empresas a la vez, el fondo se llevó la suba de ${W.name} sin
          depender de haberla elegido, y la caída de ${L.name} le hizo apenas un raspón.
          Cerró un 12% arriba del valor inicial.`,
@@ -1689,7 +1689,7 @@ const Monitor = {
     if(items === 'DINAMICA') items = newsRonda3();
     if(!items.length){ box.innerHTML = ''; return; }
     /* En el panel lateral entran todas juntas: ya no hace falta rotarlas */
-    const color = n => /📉|💔|⚠️/.test(n.tag) ? 'rojo' : /📈|🛡️|🧺/.test(n.tag) ? 'verde' : '';
+    const color = n => /📉|💔|⚠️/.test(n.tag) ? 'rojo' : /📈|🛡️|📊/.test(n.tag) ? 'verde' : '';
     box.innerHTML = `<div class="titulo">📰 Noticias de la Ronda ${this.round}</div>` +
       items.map(n=>`<div class="nt ${color(n)}">
         <div class="lbl"><span>${n.tag}</span><span>${n.src}</span></div>
@@ -2084,7 +2084,7 @@ const Grupo = {
       </table>
       <p class="hint" style="margin-top:10px">El Fondo Indexado cuenta como 3 activos, porque adentro
         ya está diversificado.</p>
-      <p class="hint" style="margin-top:6px">🧾 Cada operación paga una comisión del
+      <p class="hint" style="margin-top:6px">💸 Cada operación paga una comisión del
         <b>${(GAME_DATA.fee*100).toFixed(0)}%</b> al corredor de bolsa, como en la vida real:
         se cobra al comprar <b>y también al vender</b>. Arrepentirse cuesta, así que conviene pensar
         bien antes de operar.</p>
@@ -2100,7 +2100,7 @@ const Grupo = {
     <div class="meta-bar">
       <div class="stat"><div class="lbl">Efectivo</div><div class="val mono" id="t-cash">—</div></div>
       <div class="stat"><div class="lbl">Valor portafolio</div><div class="val mono" id="t-value">—</div></div>
-      <div class="stat"><div class="lbl">Diversificación 🧺</div><div class="val mono" id="t-div">—</div></div>
+      <div class="stat"><div class="lbl">Diversificación 📊</div><div class="val mono" id="t-div">—</div></div>
       <div class="stat"><div class="lbl">Meta 🎯</div><div class="val" style="font-size:13.5px;font-family:var(--sans)">${c?c.goalText:''}</div></div>
     </div>
     <div class="g-section">
@@ -2313,7 +2313,7 @@ const Grupo = {
           <span style="color:var(--faint)">${Engine.fmtUSD(p.v)}${p.q?' · '+p.q+' u.':''}</span></span>`).join('')}</div>
       </div>
       <p class="hint" style="margin-top:10px;border-top:1px dashed var(--line);padding-top:9px">
-        🧺 Diversificación: <b style="color:${snap.neff>=4?'var(--up)':snap.neff>=2.5?'var(--gold)':'var(--down)'}">
+        📊 Diversificación: <b style="color:${snap.neff>=4?'var(--up)':snap.neff>=2.5?'var(--gold)':'var(--down)'}">
         ${snap.neff.toFixed(1).replace('.',',')} posiciones efectivas</b>${snap.neff>=4
           ? ' — ya tienen el puntaje completo de diversificación.'
           : ' — con 4 obtienen el puntaje completo.'}</p>
@@ -2466,7 +2466,7 @@ const Grupo = {
       ${bar('🎯','Meta cumplida', sc.meta, SCORE_W.meta,
             sc.rompioCapital ? 'La familia se comprometió a no perder capital y terminaron por debajo de USD 20.000.'
             : 'Meta de la familia: ' + Engine.pct(c?c.metaRet:0.18,0) + '. Ustedes lograron ' + Engine.pct(sc.ret) + '.')}
-      ${bar('🧺','Diversificación', sc.div, SCORE_W.div,
+      ${bar('📊','Diversificación', sc.div, SCORE_W.div,
             'Tuvieron el equivalente a <b>' + sc.neff.toFixed(1).replace('.',',') +
             ' posiciones</b>, promediando las tres rondas. No alcanza con comprar un poco de todo: ' +
             'si casi todo el dinero queda en uno o dos activos, el resto pesa muy poco y cuenta como ' +
@@ -2474,7 +2474,7 @@ const Grupo = {
       ${bar('⚖️','Perfil de riesgo', sc.perfil, SCORE_W.perfil,
             'Esta familia necesitaba entre ' + Math.round(sc.band.min*100) + '% y ' + Math.round(sc.band.max*100) +
             '% en acciones y fondo. Terminaron con ' + Math.round(sc.riskShare*100) + '%.')}
-      ${bar('🧠','Disciplina', sc.disc, SCORE_W.disc,
+      ${bar('⚓','Disciplina', sc.disc, SCORE_W.disc,
             (sc.loss>0 ? 'Vendieron con pérdida por ' + Engine.fmtUSD(sc.loss) + '. ' : 'No vendieron con pérdida. ') +
             'Efectivo quieto en promedio: ' + Math.round(sc.avgCash*100) + '%.')}
       ${sc.bonus>0 ? bar('⭐','Bonus por superar la meta', sc.bonus, SCORE_W.bonus,
@@ -2517,7 +2517,7 @@ const Grupo = {
         sin necesidad de adivinar cuál iba a ser, y los bonos pagaron sus intereses todos los años
         pasara lo que pasara.
         <b>Diversificar no es apostar a varias: es dejar de depender de acertar.</b></div>
-      ${st.pf.fees?`<div class="lesson">🧾 Pagaron <b>${Engine.fmtUSD(st.pf.fees)}</b> en comisiones
+      ${st.pf.fees?`<div class="lesson">💸 Pagaron <b>${Engine.fmtUSD(st.pf.fees)}</b> en comisiones
         (${(GAME_DATA.fee*100).toFixed(0)}% de cada operación, al comprar y al vender). Se cobra cada vez:
         el que cambia de idea paga dos veces, una al deshacerse de lo que tenía y otra al comprar lo nuevo.
         Por eso el que opera todo el tiempo suele terminar peor que el que arma su cartera y la sostiene.</div>`:''}
