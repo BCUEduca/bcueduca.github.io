@@ -469,7 +469,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.09.02-a';
+const VERSION = '2026.09.02-b';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1400,18 +1400,19 @@ function barrasPuntaje(filas, grande){
   const conDatos = filas.filter(f => f.parts);
   if(!conDatos.length) return '';
   const F = grande ? 1.45 : 1;
-  const ANCHO = 1000, IZQ = grande ? 250 : 210, DER = 62;
-  const ALTO_F = Math.round(38*F), SEP = Math.round(13*F), TOPE = 105;
+  const ANCHO = 1000, IZQ = grande ? 300 : 275, DER = 55;
+  const ALTO_F = Math.round(54*F), SEP = Math.round(16*F), TOPE = 105;
   const util = ANCHO - IZQ - DER;
   const H = conDatos.length*(ALTO_F+SEP) + 8;
 
   let g = '';
   conDatos.forEach((f,i)=>{
     const y = i*(ALTO_F+SEP);
-    g += `<text x="0" y="${y+ALTO_F*0.46}" fill="#e8ecf5" font-size="${Math.round(15*F)}"
-            font-weight="700" dominant-baseline="middle">${f.name}</text>`;
-    g += `<text x="0" y="${y+ALTO_F*0.82}" fill="#8a93a8" font-size="${Math.round(12*F)}"
-            dominant-baseline="middle">${(f.score||0).toFixed(1).replace('.',',')} puntos</text>`;
+    g += `<text x="0" y="${y+ALTO_F*0.38}" fill="#e8ecf5" font-size="${Math.round(23*F)}"
+            font-weight="800" dominant-baseline="middle">${f.name}</text>`;
+    g += `<text x="0" y="${y+ALTO_F*0.78}" fill="#f5c542" font-size="${Math.round(19*F)}"
+            font-weight="800" font-family="ui-monospace,monospace"
+            dominant-baseline="middle">${(f.score||0).toFixed(1).replace('.',',')} pts</text>`;
     let x = IZQ;
     COMPONENTES.forEach(c=>{
       const v = (f.parts && f.parts[c.k]) || 0;
@@ -1419,9 +1420,9 @@ function barrasPuntaje(filas, grande){
       if(w > 0.4){
         g += `<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${ALTO_F}"
                 fill="${c.c}" rx="2"/>`;
-        if(w > 26*F)
+        if(w > 30*F)
           g += `<text x="${(x+w/2).toFixed(1)}" y="${y+ALTO_F/2}" text-anchor="middle"
-                  dominant-baseline="middle" font-size="${Math.round(13*F)}" font-weight="800"
+                  dominant-baseline="middle" font-size="${Math.round(20*F)}" font-weight="800"
                   fill="#08111f" font-family="ui-monospace,monospace">${Math.round(v)}</text>`;
       }
       x += w;
@@ -2886,7 +2887,6 @@ const Coord = {
     const medal = ['🥇','🥈','🥉'];
     const podium = rows.slice(0,3);
     const order = podium.length===3 ? [1,0,2] : podium.length===2 ? [1,0] : [0];
-    const partsTxt = p => p ? `M ${p.meta} · D ${p.div} · P ${p.perfil} · Di ${p.disc}` : '';
     return `<div class="card" style="margin-top:16px">
       <h2 class="sec" style="margin:0 0 4px">🏆 Ranking final — por puntaje</h2>
       <div class="podium">
@@ -2901,18 +2901,15 @@ const Coord = {
           </div>`;}).join('')}
       </div>
       <table class="groups-table">
-        <tr><th></th><th>Familia</th><th>Puntaje</th><th>Desglose</th><th>Valor</th><th>Retorno</th></tr>
+        <tr><th></th><th>Familia</th><th>Puntaje</th><th>Valor del portafolio</th><th>Retorno</th></tr>
         ${rows.map((r,i)=>{
           const ret = r.value/GAME_DATA.budget-1;
           return `<tr><td>${i+1}º</td>
-            <td>${this.caseIcon(r.caseId)} <b>${r.name}</b></td>
-            <td class="mono" style="font-weight:800;color:var(--gold)">${r.score.toFixed(1).replace('.',',')}</td>
-            <td class="mono" style="font-size:12.5px;color:var(--dim)">${partsTxt(r.parts)}</td>
-            <td class="mono">${Engine.fmtUSD(r.value)}</td>
-            <td class="mono ${ret>=0?'up':'down'}">${Engine.pct(ret)}</td></tr>`;}).join('')}
+            <td style="font-size:19px">${this.caseIcon(r.caseId)} <b>${r.name}</b></td>
+            <td class="mono" style="font-weight:800;color:var(--gold);font-size:23px">${r.score.toFixed(1).replace('.',',')}</td>
+            <td class="mono" style="font-size:20px">${Engine.fmtUSD(r.value)}</td>
+            <td class="mono ${ret>=0?'up':'down'}" style="font-size:20px;font-weight:700">${Engine.pct(ret)}</td></tr>`;}).join('')}
       </table>
-      <p class="hint" style="margin-top:10px"><b>M</b> meta (40) · <b>D</b> diversificación (30) ·
-        <b>P</b> perfil de riesgo (20) · <b>Di</b> disciplina (10).</p>
       ${rows.some(r=>r.parts) ? `<h2 class="sec" style="margin:18px 0 2px">📊 De dónde sacó los puntos cada equipo</h2>
         ${barrasPuntaje(rows, false)}
         <p class="hint" style="margin-top:8px">Los equipos que jugaron sin conexión no aparecen acá:
