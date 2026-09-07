@@ -370,6 +370,10 @@
       border-radius:12px;padding:12px 14px;margin-bottom:9px;font-size:14px;line-height:1.55;color:var(--dim)}
   .fb .ico{font-size:19px;line-height:1.2}
   .pod .sc{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--gold)}
+  .cmp{margin-top:6px}
+  .mon-chart-box .cmp{height:100%;display:flex;flex-direction:column;justify-content:center;padding:10px 16px}
+  .mon-chart-box .cmp svg{max-height:74%}
+  .cmp-leyenda{margin-top:10px;color:var(--dim);line-height:2;text-align:center}
   .coord-steps{display:flex;flex-direction:column;gap:10px}
   .hint{color:var(--faint);font-size:13px;line-height:1.5}
   h2.sec{font-size:16px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:18px 0 10px}
@@ -465,7 +469,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.08.26-b';
+const VERSION = '2026.09.02-a';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1378,6 +1382,67 @@ function newsRonda3(){
   ];
 }
 
+/* ================================================================
+   COMPARATIVO — cómo repartió cada equipo sus puntos entre los
+   cuatro criterios. Barras apiladas: se ve de un vistazo quién ganó
+   por meta y quién por diversificación.
+   ================================================================ */
+const COMPONENTES = [
+  {k:'meta',   n:'Meta cumplida',   max:40, c:'#22e07c'},
+  {k:'div',    n:'Diversificación', max:30, c:'#4da3ff'},
+  {k:'perfil', n:'Perfil de riesgo',max:20, c:'#9b7bff'},
+  {k:'disc',   n:'Disciplina',      max:10, c:'#f5c542'},
+  {k:'bonus',  n:'Bonus',           max:5,  c:'#ff8a3d'}
+];
+
+/* filas: [{name, parts:{...}, score}]  ·  grande=true para el proyector */
+function barrasPuntaje(filas, grande){
+  const conDatos = filas.filter(f => f.parts);
+  if(!conDatos.length) return '';
+  const F = grande ? 1.45 : 1;
+  const ANCHO = 1000, IZQ = grande ? 250 : 210, DER = 62;
+  const ALTO_F = Math.round(38*F), SEP = Math.round(13*F), TOPE = 105;
+  const util = ANCHO - IZQ - DER;
+  const H = conDatos.length*(ALTO_F+SEP) + 8;
+
+  let g = '';
+  conDatos.forEach((f,i)=>{
+    const y = i*(ALTO_F+SEP);
+    g += `<text x="0" y="${y+ALTO_F*0.46}" fill="#e8ecf5" font-size="${Math.round(15*F)}"
+            font-weight="700" dominant-baseline="middle">${f.name}</text>`;
+    g += `<text x="0" y="${y+ALTO_F*0.82}" fill="#8a93a8" font-size="${Math.round(12*F)}"
+            dominant-baseline="middle">${(f.score||0).toFixed(1).replace('.',',')} puntos</text>`;
+    let x = IZQ;
+    COMPONENTES.forEach(c=>{
+      const v = (f.parts && f.parts[c.k]) || 0;
+      const w = v/TOPE*util;
+      if(w > 0.4){
+        g += `<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${ALTO_F}"
+                fill="${c.c}" rx="2"/>`;
+        if(w > 26*F)
+          g += `<text x="${(x+w/2).toFixed(1)}" y="${y+ALTO_F/2}" text-anchor="middle"
+                  dominant-baseline="middle" font-size="${Math.round(13*F)}" font-weight="800"
+                  fill="#08111f" font-family="ui-monospace,monospace">${Math.round(v)}</text>`;
+      }
+      x += w;
+    });
+    /* el resto hasta 100, en gris: lo que dejaron sobre la mesa */
+    if(x < IZQ + util - 1)
+      g += `<rect x="${x.toFixed(1)}" y="${y}" width="${(IZQ+util-x).toFixed(1)}" height="${ALTO_F}"
+              fill="#1c2438" rx="2"/>`;
+  });
+
+  const leyenda = COMPONENTES.map(c=>
+    `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:${grande?18:14}px">
+       <span style="width:${grande?14:11}px;height:${grande?14:11}px;border-radius:3px;background:${c.c};
+             display:inline-block"></span>${c.n} <b style="color:var(--faint)">(${c.max})</b></span>`).join('');
+
+  return `<div class="cmp">
+    <svg viewBox="0 0 ${ANCHO} ${H}" style="width:100%;height:auto;display:block">${g}</svg>
+    <div class="cmp-leyenda" style="font-size:${grande?'clamp(11px,1.05vw,15px)':'12.5px'}">${leyenda}</div>
+  </div>`;
+}
+
 /* Render de las noticias de una ronda. conClave=true sólo para el coordinador. */
 function sellarVersion(){
   const v = document.getElementById('home-ver');
@@ -1448,7 +1513,8 @@ const Monitor = {
             this.setRound(st.round, true);
           }
         },
-        onGroup: g=>{ if(g && g.id){ this.groups[g.id] = g; if(this.round>=GAME_DATA.rounds) this.renderNews(); } }
+        onGroup: g=>{ if(g && g.id){ this.groups[g.id] = g;
+          if(this.round>=GAME_DATA.rounds){ this.renderNews(); this.pintarGrafico(); } } }
       });
     }
     this.render();
@@ -1476,6 +1542,11 @@ const Monitor = {
   pintarSelector(){
     const box = document.getElementById('mon-sel');
     if(!box) return;
+    if(this.round >= GAME_DATA.rounds){
+      box.innerHTML = `<span style="color:var(--gold);font-weight:800;letter-spacing:1.2px;
+        font-size:clamp(11px,1.1vw,15px);text-transform:uppercase">📊 De dónde sacó los puntos cada equipo</span>`;
+      return;
+    }
     box.innerHTML = GAME_DATA.assets.map(a=>
       `<button class="${a.id===this.activo?'on':''}" onclick="Monitor.verActivo('${a.id}')"
         >${marcaHTML(a, 12)}${a.ticker}</button>`
@@ -1485,6 +1556,20 @@ const Monitor = {
   pintarGrafico(){
     const box = document.getElementById('mon-chart');
     if(!box) return;
+
+    /* Cerrado el mercado, el panel grande ya no necesita mostrar velas:
+       lo que importa es de dónde sacó los puntos cada equipo. */
+    if(this.round >= GAME_DATA.rounds){
+      const rk = this.ranking().filter(g => g.parts);
+      if(rk.length){
+        box.innerHTML = barrasPuntaje(rk, true);
+        return;
+      }
+      box.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;
+        color:var(--faint);font-size:clamp(13px,1.4vw,19px);text-align:center;padding:20px">
+        Cuando los equipos terminen, acá se compara de dónde sacó los puntos cada uno.</div>`;
+      return;
+    }
     const a = Engine.assetById(this.activo);
     const vs = velas(this.activo, this.round);
     if(!a || !vs.length){ box.innerHTML = ''; return; }
@@ -2828,6 +2913,10 @@ const Coord = {
       </table>
       <p class="hint" style="margin-top:10px"><b>M</b> meta (40) · <b>D</b> diversificación (30) ·
         <b>P</b> perfil de riesgo (20) · <b>Di</b> disciplina (10).</p>
+      ${rows.some(r=>r.parts) ? `<h2 class="sec" style="margin:18px 0 2px">📊 De dónde sacó los puntos cada equipo</h2>
+        ${barrasPuntaje(rows, false)}
+        <p class="hint" style="margin-top:8px">Los equipos que jugaron sin conexión no aparecen acá:
+          el código de resultado trae el puntaje total, no el desglose.</p>` : ''}
       <div class="lesson" style="margin-top:12px">🎤 <b>Para el cierre:</b> mostrá la columna de retorno
         al lado de la del puntaje. Casi siempre hay un grupo que ganó más dinero pero quedó abajo en el
         ranking. Esa es la conversación: ¿ganaron por buenas decisiones o porque salió bien la apuesta?
