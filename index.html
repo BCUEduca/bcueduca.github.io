@@ -469,7 +469,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.09.02-b';
+const VERSION = '2026.09.02-c';
 
 const GAME_DATA = {
   budget: 20000,
@@ -2602,11 +2602,11 @@ const Grupo = {
         El fondo indexado, al tener un pedacito de cada empresa, se llevó la suba de la ganadora
         sin necesidad de adivinar cuál iba a ser, y los bonos pagaron sus intereses todos los años
         pasara lo que pasara.
-        <b>Diversificar no es apostar a varias: es dejar de depender de acertar.</b></div>
+        <b>Diversificar no es apostar a varias acciones: es dejar de depender de acertar.</b></div>
       ${st.pf.fees?`<div class="lesson">💸 Pagaron <b>${Engine.fmtUSD(st.pf.fees)}</b> en comisiones
         (${(GAME_DATA.fee*100).toFixed(0)}% de cada operación, al comprar y al vender). Se cobra cada vez:
         el que cambia de idea paga dos veces, una al deshacerse de lo que tenía y otra al comprar lo nuevo.
-        Por eso el que opera todo el tiempo suele terminar peor que el que arma su cartera y la sostiene.</div>`:''}
+        Por eso, el que opera frecuentemente suele incurrir en mayores costos operativos (por pagar mayores comisiones) que aquel que arma su cartera y la sostiene en el tiempo.</div>`:''}
       ${st.pf.coupons||st.pf.lrmInterest?`<div class="lesson">💰 En total cobraron
         <b>${Engine.fmtUSD(st.pf.coupons + st.pf.lrmInterest)}</b> en cupones e intereses — dinero que
         ganaron aunque los precios no subieran. Eso es el <b>interés</b> trabajando para ustedes.</div>`:''}
