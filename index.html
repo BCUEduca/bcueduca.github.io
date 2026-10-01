@@ -469,7 +469,7 @@
    ================================================================ */
 /* Sello de versión: si en el celular no ves este número, estás viendo un archivo viejo
    guardado en caché. Subí el número cada vez que publiques una versión nueva. */
-const VERSION = '2026.09.02-d';
+const VERSION = '2026.10.01-a';
 
 const GAME_DATA = {
   budget: 20000,
@@ -1399,9 +1399,12 @@ const COMPONENTES = [
 function barrasPuntaje(filas, grande){
   const conDatos = filas.filter(f => f.parts);
   if(!conDatos.length) return '';
-  const F = grande ? 1.45 : 1;
+  /* Con muchos equipos las filas se achican para que el gráfico no quede
+     tan alto: en el proyector, si no, hay que reducirlo todo y no se lee. */
+  const ajuste = Math.min(1, 3.6/Math.max(conDatos.length,1));
+  const F = (grande ? 1.45 : 1) * (0.72 + 0.28*ajuste);
   const ANCHO = 1000, IZQ = grande ? 300 : 275, DER = 55;
-  const ALTO_F = Math.round(54*F), SEP = Math.round(16*F), TOPE = 105;
+  const ALTO_F = Math.round(54*F*(0.55+0.45*ajuste)), SEP = Math.round(16*F), TOPE = 105;
   const util = ANCHO - IZQ - DER;
   const H = conDatos.length*(ALTO_F+SEP) + 8;
 
@@ -2116,17 +2119,19 @@ const Grupo = {
     </div>`;
   },
 
-  /* La familia ya no se elige: se asigna por número de equipo.
+  /* La familia no se elige: viene con el objetivo que asignó el coordinador.
+     Hablamos de objetivo y no de número de equipo porque pueden jugar más de
+     tres equipos, y en ese caso dos comparten el mismo objetivo.
      Ahorra la negociación y garantiza que las tres estén representadas. */
   rCase(){
     return `<div class="g-section">
-      <div class="step-title">¿Qué número de equipo son?</div>
-      <p class="step-sub">El coordinador les asignó un número. Tóquenlo y les toca una familia
-        con su historia y su meta.</p>
+      <div class="step-title">¿Qué objetivo les tocó?</div>
+      <p class="step-sub">El coordinador les asignó un objetivo. Tóquenlo y van a conocer
+        a la familia que depende de ustedes, con su historia y su meta.</p>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px">
         ${GAME_DATA.cases.map((c,i)=>`
           <button class="btn btn-gold btn-big" style="font-size:22px;padding:20px"
-                  onclick="Grupo.pickCase('${c.id}')">EQUIPO ${i+1}</button>`).join('')}
+                  onclick="Grupo.pickCase('${c.id}')">OBJETIVO ${i+1}</button>`).join('')}
       </div>
       ${this.rReglas()}
     </div>`;
